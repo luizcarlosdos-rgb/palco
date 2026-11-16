@@ -640,7 +640,7 @@ function drawMedia(){
 }
 function pick(i){ cur=i; au.src=media[i].url; au.load(); $('seek').value=0; $('t0').textContent='00:00'; $('t1').textContent='00:00'; drawMedia(); }
 $('mchip').onclick=e=>{ e.stopPropagation(); const L=$('mlist'); drawMedia(); L.style.display=L.style.display==='block'?'none':'block'; };
-$('mlist').onclick=e=>{ e.stopPropagation(); const b=e.target.closest('button'); if(!b) return; if(b.dataset.add){ auTarget=null; $('afile').click(); } else if(b.dataset.p!==undefined){ const s=getShow(curShow.id); const e=LIB[libIdx(s.items[+b.dataset.p].n)]; if(e) openEntry(e,{id:s.id,pos:+b.dataset.p}); } else { pick(+b.dataset.i); if(curEntry) curEntry.au=media[+b.dataset.i]; } $('mlist').style.display='none'; };
+$('mlist').onclick=e=>{ e.stopPropagation(); const b=e.target.closest('button'); if(!b) return; if(b.dataset.add){ if(curShow&&mode==='solo'&&window.addMp3){ window.addMp3('cur'); } else { auTarget=null; $('afile').click(); } } else if(b.dataset.p!==undefined){ const s=getShow(curShow.id); const e=LIB[libIdx(s.items[+b.dataset.p].n)]; if(e) openEntry(e,{id:s.id,pos:+b.dataset.p}); } else { pick(+b.dataset.i); if(curEntry) curEntry.au=media[+b.dataset.i]; } $('mlist').style.display='none'; };
 document.addEventListener('click',()=>{ $('mlist').style.display='none'; });
 $('afile').onchange=e=>{ const f=e.target.files[0]; if(!f) return; const it={name:f.name.replace(/\.[^.]+$/,''),url:URL.createObjectURL(f)}; media.push(it); const tg=auTarget; auTarget=null; if(tg){ tg.au=it; drawDet(); toast('Áudio ligado a '+tg.n); } else { pick(media.length-1); if(curEntry) curEntry.au=it; } e.target.value=''; };
 const PLAY='M7 4v16l13-8z', PAUSE='M6 4h4v16H6zM14 4h4v16h-4z';
@@ -793,8 +793,8 @@ async function afterImp(en,fn){ if(pickOpen){ pickSel.add(en.n.toLowerCase()); d
 /* Solo: biblioteca de áudios, adicionar MP3, escolher áudio do show, colar lista */
 const AUD=[]; const PEND={};
 const audById=id=>AUD.find(z=>z._id===id)||null;
-function audFor(en){ if(mode!=='solo') return null; if(curShow){ const s=getShow(curShow.id); const it=s&&s.items[curShow.pos]; if(it&&it.a){ if(it.a==='-') return null; const x=audById(it.a); if(x) return x; } } const byName=window.findAud?window.findAud(en.n):null; return byName||en.au||null; }
-function itemAu(it,e){ if(it.a==='-') return null; const x=it.a?audById(it.a):null; return x||((e&&e.au)||null); }
+function audFor(en){ if(mode!=='solo') return null; if(curShow){ const s=getShow(curShow.id); const it=s&&s.items[curShow.pos]; if(it&&it.a){ if(it.a==='-') return null; const x=audById(it.a); if(x) return x; } } const byName=window.findAud?window.findAud(en.n):null; return byName||(curShow?null:(en.au||null)); }
+function itemAu(it,e){ if(it.a==='-') return null; const x=it.a?audById(it.a):null; return x||((e&&window.findAud)?window.findAud(e.n):null); }
 (function(){
   const mf=document.createElement('input'); mf.type='file'; mf.accept='audio/*,.mp3'; mf.multiple=true; mf.hidden=true; document.body.appendChild(mf);
   let modo='lib';
@@ -808,6 +808,7 @@ function itemAu(it,e){ if(it.a==='-') return null; const x=it.a?audById(it.a):nu
   const addFiles=fs=>fs.map(f=>{ const nome=f.name.replace(/\.[^.]+$/,''); let it=AUD.find(x=>x.name===nome&&x.size===f.size); if(!it){ it={name:nome,size:f.size,url:URL.createObjectURL(f),_id:pidFor(nome)||newId(),blob:f}; AUD.push(it); media.push(it); } return it; });
   window.addMp3=m=>{ modo=m; mf.click(); };
   mf.onchange=()=>{ const fs=[...mf.files]; mf.value=''; if(!fs.length) return; const its=addFiles(fs);
+    if(modo==='cur'){ const s=curShow&&getShow(curShow.id); if(s&&s.items[curShow.pos]){ s.items[curShow.pos].a=its[0]._id; if(curEntry) loadAu(curEntry); drawMedia(); toast('Áudio ligado a '+(curEntry?curEntry.n:'música')); } try{ window.palcoSave&&window.palcoSave(); }catch(e){} return; }
     if(modo==='pick'){ const s=getShow(showOpen); if(s&&s.items[apkIdx]) s.items[apkIdx].a=its[0]._id; apk.classList.remove('on'); drawDet(); toast('Áudio ligado'); return; }
     if(modo==='show'){ const s=getShow(showOpen); let nv=0;
       if(s) for(const it of its){ const p=it.name.split(/\s+-\s+/); const title=(p.length>1?p.slice(1).join(' - '):it.name).trim(); const i=findLib(title); let en; if(i>=0) en=LIB[i]; else { en={n:title,k:'blank',o:null,p:1}; LIB.push(en); nv++; } const x=inShow(s,en.n); if(x) x.a=it._id; else s.items.push({t:'s',n:en.n,a:it._id}); }
