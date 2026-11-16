@@ -594,21 +594,31 @@ $('tomTop').onclick=openSheet;
 /* menu e importação */
 $('mbtn').onclick=e=>{ e.stopPropagation(); const m=$('menu'); m.style.display=m.style.display==='block'?'none':'block'; };
 document.addEventListener('click',()=>{ $('menu').style.display='none'; });
-$('m-imp').onclick=()=>{ $('file').accept='.lset,.pdf,.json,application/pdf,application/json,application/octet-stream'; $('file').click(); };
+$('m-imp').onclick=()=>{ $('file').accept='.lset,.pdf,.json,application/pdf,application/json,application/octet-stream'; $('file').multiple=true; $('file').click(); };
 
 $('file').onchange=async e=>{
-  const f=e.target.files[0]; if(!f) return;
-  try{
-    const nome=f.name.replace(/\.[^.]+$/,'');
-    if(/\.pdf$/i.test(f.name)||f.type==='application/pdf'){
-      if(!window.pdfjsLib) throw new Error('sem leitor de PDF');
-      pdfjsLib.GlobalWorkerOptions.workerSrc='pdf.worker.min.js';
-      const doc=await pdfjsLib.getDocument({data:new Uint8Array(await f.arrayBuffer())}).promise;
-      const en=addLib({n:nome,k:'pdf',o:doc,p:doc.numPages}); await afterImp(en,f.name);
-    } else { const obj=JSON.parse(await f.text()); const sc=obj&&obj.scores&&obj.scores[0]; if(!sc||!sc.pages) throw new Error('arquivo sem partitura');
-      const en=addLib({n:sc.title||obj.title||nome,k:'lset',o:obj,p:(sc.pages||[]).length||1}); await afterImp(en,f.name); }
-  }catch(err){ toast('Não consegui abrir esse arquivo. Use um .lset do LiveSet ou um PDF.'); }
+  const fs=[...e.target.files]; if(!fs.length) return;
+  let ok=0, bad=0, last=null, lastName='';
+  for(const f of fs){
+    try{
+      const nome=f.name.replace(/\.[^.]+$/,'');
+      let en;
+      if(/\.pdf$/i.test(f.name)||f.type==='application/pdf'){
+        if(!window.pdfjsLib) throw new Error('sem leitor de PDF');
+        pdfjsLib.GlobalWorkerOptions.workerSrc='pdf.worker.min.js';
+        const doc=await pdfjsLib.getDocument({data:new Uint8Array(await f.arrayBuffer())}).promise;
+        en=addLib({n:nome,k:'pdf',o:doc,p:doc.numPages});
+      } else { const obj=JSON.parse(await f.text()); const sc=obj&&obj.scores&&obj.scores[0]; if(!sc||!sc.pages) throw new Error('arquivo sem partitura');
+        en=addLib({n:sc.title||obj.title||nome,k:'lset',o:obj,p:(sc.pages||[]).length||1}); }
+      ok++; last=en; lastName=f.name;
+      if(pickOpen) pickSel.add(en.n.toLowerCase());
+    }catch(err){ bad++; }
+  }
   e.target.value='';
+  if(!ok){ toast('Não consegui abrir esse arquivo. Use um .lset do LiveSet ou um PDF.'); return; }
+  if(fs.length===1){ await afterImp(last,lastName); return; }
+  if(pickOpen) drawPick(); else drawHome();
+  toast(ok+(ok===1?' música importada':' músicas importadas')+(bad?'. '+bad+' não abriu'+(bad>1?'ram':''):''));
 };
 const ST={banda:{shows:[]},solo:{shows:[]}};
 function setMode(m){ const troca=(m!==mode); if(m!==mode){ try{ au.pause(); }catch(e){} ST[mode]={shows:SHOWS.splice(0)}; SHOWS.push(...ST[m].shows); curEntry=null; curShow=null; showOpen=null; editing=false; setTab('s'); $('home').classList.remove('off'); document.body.classList.remove('limpo'); } mode=m; setTimeout(()=>{ try{ window.palcoSave&&window.palcoSave(); }catch(e){} },0); document.body.classList.remove('banda','solo'); document.body.classList.add(m); $('m-mode').textContent=m==='solo'?'Modo Banda':'Modo Solo'; document.querySelector('#htop b').textContent=m==='solo'?'Solo':'Banda'; requestAnimationFrame(()=>{sizeSvg();}); if(window.syncHome) syncHome(); if(troca){ drawHome(); updFl(); } }
@@ -701,7 +711,7 @@ $('hq').oninput=drawHome;
 $('tab-m').onclick=()=>{ setTab('m'); drawHome(); };
 $('tab-s').onclick=()=>{ setTab('s'); drawHome(); };
 $('tab-a').onclick=()=>{ setTab('a'); drawHome(); };
-$('himp').onclick=()=>{ if(showOpen!=null) startShow(); else { $('file').accept='.lset,.pdf,.json,application/pdf,application/json,application/octet-stream'; $('file').click(); } };
+$('himp').onclick=()=>{ if(showOpen!=null) startShow(); else { $('file').accept='.lset,.pdf,.json,application/pdf,application/json,application/octet-stream'; $('file').multiple=true; $('file').click(); } };
 $('hbtn').onclick=showHome;
 $('hmenu').onclick=e=>{ e.stopPropagation(); const m=$('menu'); m.style.display=m.style.display==='block'?'none':'block'; };
 try{ const S=JSON.parse($('songs').textContent);
@@ -775,7 +785,7 @@ function drawPick(){
   $('pok').textContent=pickSel.size?'Adicionar ('+pickSel.size+')':'Adicionar'; $('pok').disabled=!pickSel.size;
 }
 $('plist').onclick=e=>{ const b=e.target.closest('.prow'); if(!b||b.disabled) return; const k=b.dataset.k; if(pickSel.has(k)) pickSel.delete(k); else pickSel.add(k); drawPick(); };
-$('pq').oninput=drawPick; $('pcan').onclick=closePick; $('pimp').onclick=()=>{ $('file').accept='.lset,.pdf,.json,application/pdf,application/json,application/octet-stream'; $('file').click(); };
+$('pq').oninput=drawPick; $('pcan').onclick=closePick; $('pimp').onclick=()=>{ $('file').accept='.lset,.pdf,.json,application/pdf,application/json,application/octet-stream'; $('file').multiple=true; $('file').click(); };
 $('pok').onclick=()=>{ const s=getShow(showOpen); if(!s) return closePick(); const have=new Set(s.items.filter(i=>i.t==='s').map(i=>i.n.toLowerCase())); pickSel.forEach(k=>{ const j=libIdx(k); if(j>=0&&!have.has(k)) s.items.push({t:'s',n:LIB[j].n}); }); closePick(); drawDet(); };
 async function afterImp(en,fn){ if(pickOpen){ pickSel.add(en.n.toLowerCase()); drawPick(); toast('Importado: '+fn); } else { await openEntry(en); toast('Aberto: '+fn); } }
 /* Solo: biblioteca de áudios, adicionar MP3, escolher áudio do show, colar lista */
@@ -892,7 +902,7 @@ syncHome(); drawHome();
     if(matchMedia('(pointer:coarse)').matches&&navigator.canShare&&navigator.canShare({files:[file]})){ try{ await navigator.share({files:[file],title:'Backup do app de palco'}); toast('Backup pronto'); }catch(e){ if(e&&e.name!=='AbortError') toast('Não consegui salvar o backup.'); } return; }
     const a=document.createElement('a'); a.href=URL.createObjectURL(file); a.download=fn; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),5000); toast('Backup salvo: '+fn); }catch(e){ toast('Não consegui salvar o backup.'); } };
   const fi=document.createElement('input'); fi.type='file'; fi.accept='*/*'; fi.hidden=true; document.body.appendChild(fi);
-  let rstOn=false; $('m-rst').onclick=()=>{ rstOn=true; $('file').accept='.json,application/json'; $('file').click(); };
+  let rstOn=false; $('m-rst').onclick=()=>{ rstOn=true; $('file').accept='.json,application/json'; $('file').multiple=false; $('file').click(); };
   $('file').addEventListener('change',e=>{ if(!rstOn) return; rstOn=false; e.stopImmediatePropagation(); const f=e.target.files[0]; e.target.value=''; if(f) run(f); },true);
   const run=async f=>{ let d;
     try{ d=JSON.parse(await f.text()); if(d.app!=='palco'||!Array.isArray(d.lib)) throw 0; }catch(e){ toast('Esse arquivo não é um backup do app.'); return; }
