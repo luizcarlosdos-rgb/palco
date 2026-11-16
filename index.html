@@ -793,7 +793,7 @@ async function afterImp(en,fn){ if(pickOpen){ pickSel.add(en.n.toLowerCase()); d
 /* Solo: biblioteca de áudios, adicionar MP3, escolher áudio do show, colar lista */
 const AUD=[]; const PEND={};
 const audById=id=>AUD.find(z=>z._id===id)||null;
-function audFor(en){ if(mode!=='solo') return null; if(curShow){ const s=getShow(curShow.id); const it=s&&s.items[curShow.pos]; if(it&&it.a){ if(it.a==='-') return null; const x=audById(it.a); if(x) return x; } } return en.au||null; }
+function audFor(en){ if(mode!=='solo') return null; if(curShow){ const s=getShow(curShow.id); const it=s&&s.items[curShow.pos]; if(it&&it.a){ if(it.a==='-') return null; const x=audById(it.a); if(x) return x; } } const byName=window.findAud?window.findAud(en.n):null; return byName||en.au||null; }
 function itemAu(it,e){ if(it.a==='-') return null; const x=it.a?audById(it.a):null; return x||((e&&e.au)||null); }
 (function(){
   const mf=document.createElement('input'); mf.type='file'; mf.accept='audio/*,.mp3'; mf.multiple=true; mf.hidden=true; document.body.appendChild(mf);
@@ -803,6 +803,7 @@ function itemAu(it,e){ if(it.a==='-') return null; const x=it.a?audById(it.a):nu
   const newId=()=>'a'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
   const findLib=t=>{ const k=norm(t); if(!k) return -1; let i=LIB.findIndex(x=>norm(x.n)===k); if(i<0&&k.length>3) i=LIB.findIndex(x=>{ const n=norm(x.n); return n.length>3&&(n.includes(k)||k.includes(n)); }); return i; };
   const findAud=t=>{ const k=norm(t); if(k.length<4) return null; return AUD.find(x=>norm(x.name)===k)||AUD.find(x=>norm(x.name).includes(k))||null; };
+  window.findAud=findAud;
   const inShow=(s,n)=>s.items.find(x=>x.t==='s'&&x.n.toLowerCase()===n.toLowerCase());
   const addFiles=fs=>fs.map(f=>{ const nome=f.name.replace(/\.[^.]+$/,''); let it=AUD.find(x=>x.name===nome&&x.size===f.size); if(!it){ it={name:nome,size:f.size,url:URL.createObjectURL(f),_id:pidFor(nome)||newId(),blob:f}; AUD.push(it); media.push(it); } return it; });
   window.addMp3=m=>{ modo=m; mf.click(); };
