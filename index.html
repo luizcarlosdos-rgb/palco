@@ -827,8 +827,8 @@ function itemAu(it,e){ if(it.a==='-') return null; const x=it.a?audById(it.a):nu
   const drawApk=()=>{ const q=norm($('aq').value); const ls=AUD.filter(x=>!q||norm(x.name).includes(q)).sort((a,b)=>a.name.localeCompare(b.name,'pt',{sensitivity:'base'})); $('alist').innerHTML=ls.length?ls.map(x=>`<button data-id="${x._id}">${esc(x.name)}</button>`).join(''):'<div class="hvazio">Nenhum áudio. Toque em Novo MP3.</div>'; };
   window.openApk=i=>{ apkIdx=i; $('aq').value=''; drawApk(); apk.classList.add('on'); };
   $('aq').oninput=drawApk;
-  $('alist').onclick=e=>{ const bt=e.target.closest('button'); if(!bt) return; const s=getShow(showOpen); if(s&&s.items[apkIdx]) s.items[apkIdx].a=bt.dataset.id; apk.classList.remove('on'); drawDet(); };
-  $('anone').onclick=()=>{ const s=getShow(showOpen); if(s&&s.items[apkIdx]) s.items[apkIdx].a='-'; apk.classList.remove('on'); drawDet(); };
+  $('alist').onclick=e=>{ const bt=e.target.closest('button'); if(!bt) return; const s=getShow(showOpen); if(s&&s.items[apkIdx]) s.items[apkIdx].a=bt.dataset.id; apk.classList.remove('on'); drawDet(); try{ window.palcoSave&&window.palcoSave(); }catch(e){} };
+  $('anone').onclick=()=>{ const s=getShow(showOpen); if(s&&s.items[apkIdx]) s.items[apkIdx].a='-'; apk.classList.remove('on'); drawDet(); try{ window.palcoSave&&window.palcoSave(); }catch(e){} };
   $('acn').onclick=()=>apk.classList.remove('on');
   $('anew').onclick=()=>addMp3('pick');
   /* colar lista */
@@ -882,6 +882,9 @@ function itemAu(it,e){ if(it.a==='-') return null; const x=it.a?audById(it.a):nu
     ready=true; try{ drawMedia(); }catch(e){} drawHome();
   }
   window.palcoSave=save;
+  setInterval(()=>{ try{ save(); }catch(e){} },1500);
+  document.addEventListener('visibilitychange',()=>{ try{ save(); }catch(e){} });
+  window.addEventListener('pagehide',()=>{ try{ save(); }catch(e){} });
   window.palcoDelAudio=id=>{ if(!db) return; try{ db.transaction('audio','readwrite').objectStore('audio').delete(id); }catch(e){} };
   load().then(()=>{ setInterval(save,2500); });
   document.addEventListener('visibilitychange',()=>{ if(document.hidden) save(); });
