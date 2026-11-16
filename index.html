@@ -597,7 +597,7 @@ document.addEventListener('click',()=>{ $('menu').style.display='none'; });
 $('m-imp').onclick=()=>{ $('file').accept='.lset,.pdf,.json,application/pdf,application/json,application/octet-stream'; $('file').multiple=true; $('file').click(); };
 
 $('file').onchange=async e=>{
-  const fs=[...e.target.files]; if(!fs.length) return;
+  const fs=[...e.target.files]; const forN=window.impFor; window.impFor=null; if(!fs.length) return; const ctx0=forN&&curShow?{id:curShow.id,pos:curShow.pos}:null;
   let ok=0, bad=0, last=null, lastName='';
   for(const f of fs){
     try{
@@ -607,15 +607,16 @@ $('file').onchange=async e=>{
         if(!window.pdfjsLib) throw new Error('sem leitor de PDF');
         pdfjsLib.GlobalWorkerOptions.workerSrc='pdf.worker.min.js';
         const doc=await pdfjsLib.getDocument({data:new Uint8Array(await f.arrayBuffer())}).promise;
-        en=addLib({n:nome,k:'pdf',o:doc,p:doc.numPages});
+        en=addLib({n:forN||nome,k:'pdf',o:doc,p:doc.numPages});
       } else { const obj=JSON.parse(await f.text()); const sc=obj&&obj.scores&&obj.scores[0]; if(!sc||!sc.pages) throw new Error('arquivo sem partitura');
-        en=addLib({n:sc.title||obj.title||nome,k:'lset',o:obj,p:(sc.pages||[]).length||1}); }
+        en=addLib({n:forN||sc.title||obj.title||nome,k:'lset',o:obj,p:(sc.pages||[]).length||1}); }
       ok++; last=en; lastName=f.name;
       if(pickOpen) pickSel.add(en.n.toLowerCase());
     }catch(err){ bad++; }
   }
   e.target.value='';
   if(!ok){ toast('Não consegui abrir esse arquivo. Use um .lset do LiveSet ou um PDF.'); return; }
+  if(forN){ await openEntry(last,ctx0); toast('Letra importada em '+forN); return; }
   if(fs.length===1){ await afterImp(last,lastName); return; }
   if(pickOpen) drawPick(); else drawHome();
   toast(ok+(ok===1?' música importada':' músicas importadas')+(bad?'. '+bad+' não abriu'+(bad>1?'ram':''):''));
@@ -690,7 +691,7 @@ async function openEntry(en,ctx){ await openEntry0(en); curEntry=en; curShow=ctx
 (function(){ const mk=(id,d,path)=>{ const b=document.createElement('button'); b.id=id; b.className='fl'; b.setAttribute('aria-label',d<0?'Música anterior':'Próxima música'); b.innerHTML='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="'+path+'"/></svg>'; b.onclick=e=>{ e.stopPropagation(); goSib(d,mode==='solo'); }; $('app').appendChild(b); }; mk('fl-p',-1,'M15 5l-7 7 7 7'); mk('fl-n',1,'M9 5l7 7-7 7'); })();
 function updFl(){ const lim=document.body.classList.contains('limpo')&&curShow&&$('home').classList.contains('off'); $('fl-p').classList.toggle('on',!!lim&&showSib(-1)!=null); $('fl-n').classList.toggle('on',!!lim&&showSib(1)!=null); }
 async function openEntry0(en){
-  if(en.k==='blank'){ document.body.classList.remove('pdf'); kind='blank'; song=null; pdfDoc=null; pageIdx=0; $('ttl').textContent=en.n; $('wrap').innerHTML='<div class="semletra"><b>'+esc(en.n)+'</b><span>Esta música ainda não tem letra.</span></div>'; hideHome(); $('stage').scrollTo(0,0); return; }
+  if(en.k==='blank'){ document.body.classList.remove('pdf'); kind='blank'; song=null; pdfDoc=null; pageIdx=0; $('ttl').textContent=en.n; $('wrap').innerHTML='<div class="semletra"><b>'+esc(en.n)+'</b><span>Esta música ainda não tem letra.</span><button id="blimp" class="btn" style="padding:14px 22px;font-size:20px;border-radius:12px;border:1px solid #4c6a94;background:#1f3556;color:#e8eef8">Importar letra (.lset ou PDF)</button></div>'; $('blimp').onclick=()=>{ window.impFor=en.n; $('file').accept='.lset,.pdf,.json,application/pdf,application/json,application/octet-stream'; $('file').multiple=false; $('file').click(); }; hideHome(); $('stage').scrollTo(0,0); return; }
   if(en.k==='pdf'){
     pdfjsLib.GlobalWorkerOptions.workerSrc='pdf.worker.min.js';
     pdfDoc=en.o; kind='pdf'; song=null; pageIdx=en.pg||0; zoom=1; document.body.classList.add('pdf');
