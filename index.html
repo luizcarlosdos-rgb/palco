@@ -244,6 +244,7 @@ body.pet .page .ch{font-size:52px}body.pet .page .nc{font-size:22px}body.pet .pa
   <button id="m-bkp">Backup: salvar arquivo</button>
   <button id="m-rst">Backup: restaurar arquivo</button>
   <button id="m-mode">Modo Solo</button>
+  <button id="m-upd">Atualizar o app</button>
 </div>
 <input type="file" id="file" accept=".lset,.json,.pdf,application/pdf,application/json,text/plain,*/*" hidden>
 <input type="file" id="afile" accept="audio/*,.mp3" hidden>
@@ -626,6 +627,8 @@ function setMode(m){ const troca=(m!==mode); if(m!==mode){ try{ au.pause(); }cat
 $('m-wid').onclick=()=>{ AUTOW=!AUTOW; $('m-wid').textContent='Compassos: '+(AUTOW?'Auto':'Original'); render(); };
 $('m-font').onclick=()=>{ const on=document.body.classList.toggle('pet'); $('m-font').textContent='Fonte: '+(on?'Petaluma':'Palco Jazz'); document.fonts.load('50px PetalumaScript').then(()=>render()); render(); };
 $('m-mode').onclick=()=>setMode(mode==='solo'?'banda':'solo');
+$('m-upd').onclick=async()=>{ toast('Atualizando...'); try{ try{ window.palcoSave&&await window.palcoSave(); }catch(e){} await new Promise(r=>setTimeout(r,600)); const rs=await navigator.serviceWorker.getRegistrations(); await Promise.all(rs.map(r=>r.unregister())); const ks=await caches.keys(); await Promise.all(ks.map(k=>caches.delete(k))); }catch(e){} location.replace(location.pathname+'?u='+Date.now()); };
+
 var AUTO=false;
 (function(){ const st=document.createElement('style'); st.textContent='body.banda #m-auto{display:none}'; document.head.appendChild(st); const b=$('m-auto'); const sh=()=>{ b.textContent='Passar sozinho: '+(AUTO?'Ligado':'Desligado'); }; sh(); b.onclick=()=>{ AUTO=!AUTO; try{ window.palcoSave&&window.palcoSave(); }catch(e){} sh(); }; })();
 $('m-theme').onclick=()=>{ document.body.classList.toggle('claro'); $('m-theme').textContent=document.body.classList.contains('claro')?'Tela escura':'Tela clara'; render(); };
