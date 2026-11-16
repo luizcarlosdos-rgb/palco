@@ -633,12 +633,14 @@ $('stage').addEventListener('scroll',updateNav);
 const au=$('au'); const media=[]; let cur=-1;
 const mm=s=>{s=Math.max(0,Math.floor(s||0));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')};
 function drawMedia(){
-  const L=$('mlist'); L.innerHTML=media.map((m,i)=>`<button data-i="${i}" class="${i===cur?'cur':''}">${esc(m.name)}</button>`).join('')+`<button data-add="1">＋ Adicionar arquivo de áudio</button>`;
+  const L=$('mlist'); const sh=curShow&&getShow(curShow.id);
+  if(sh){ L.innerHTML=sh.items.map((it,p)=>it.t==='s'&&libIdx(it.n)>=0?`<button data-p="${p}" class="${p===curShow.pos?'cur':''}">${esc(it.n)}</button>`:'').join('')+`<button data-add="1">＋ Adicionar arquivo de áudio</button>`; }
+  else L.innerHTML=media.map((m,i)=>`<button data-i="${i}" class="${i===cur?'cur':''}">${esc(m.name)}</button>`).join('')+`<button data-add="1">＋ Adicionar arquivo de áudio</button>`;
   $('mchip').textContent=cur>=0?media[cur].name:'Sem mídia'; $('mchip').classList.toggle('empty',cur<0);
 }
 function pick(i){ cur=i; au.src=media[i].url; au.load(); $('seek').value=0; $('t0').textContent='00:00'; $('t1').textContent='00:00'; drawMedia(); }
 $('mchip').onclick=e=>{ e.stopPropagation(); const L=$('mlist'); drawMedia(); L.style.display=L.style.display==='block'?'none':'block'; };
-$('mlist').onclick=e=>{ e.stopPropagation(); const b=e.target.closest('button'); if(!b) return; if(b.dataset.add){ auTarget=null; $('afile').click(); } else { pick(+b.dataset.i); if(curEntry) curEntry.au=media[+b.dataset.i]; } $('mlist').style.display='none'; };
+$('mlist').onclick=e=>{ e.stopPropagation(); const b=e.target.closest('button'); if(!b) return; if(b.dataset.add){ auTarget=null; $('afile').click(); } else if(b.dataset.p!==undefined){ const s=getShow(curShow.id); const e=LIB[libIdx(s.items[+b.dataset.p].n)]; if(e) openEntry(e,{id:s.id,pos:+b.dataset.p}); } else { pick(+b.dataset.i); if(curEntry) curEntry.au=media[+b.dataset.i]; } $('mlist').style.display='none'; };
 document.addEventListener('click',()=>{ $('mlist').style.display='none'; });
 $('afile').onchange=e=>{ const f=e.target.files[0]; if(!f) return; const it={name:f.name.replace(/\.[^.]+$/,''),url:URL.createObjectURL(f)}; media.push(it); const tg=auTarget; auTarget=null; if(tg){ tg.au=it; drawDet(); toast('Áudio ligado a '+tg.n); } else { pick(media.length-1); if(curEntry) curEntry.au=it; } e.target.value=''; };
 const PLAY='M7 4v16l13-8z', PAUSE='M6 4h4v16H6zM14 4h4v16h-4z';
