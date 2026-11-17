@@ -106,7 +106,7 @@ body.solo .edge{display:flex}
 #hsearch input::placeholder{color:#9fb2cc}
 #hlist{flex:1;min-height:0;overflow:auto;scrollbar-width:none}#hlist::-webkit-scrollbar{display:none}
 .hrow{display:flex;align-items:center;gap:16px;min-height:72px;width:100%;padding:0 20px;border:0;border-bottom:1px solid #3a4b5f;background:none;text-align:left;color:inherit;font-family:inherit}
-.hrow:active{background:#2f4156}.drow.sel{background:#2f4156;box-shadow:inset 4px 0 0 #b4cdf6}.swrap{position:relative;overflow:hidden;border-bottom:1px solid #3a4b5f}.swrap .hrow{position:relative;z-index:1;background:#283747;transition:width .2s;border-bottom:0;touch-action:pan-y}.swrap.open .hrow{width:calc(100% - 96px)}.swrap.open .sdel{visibility:visible}.nov{display:inline-block;margin-left:10px;padding:2px 10px;border-radius:999px;background:#b4cdf6;color:#1b2735;font-size:13px;font-weight:700;vertical-align:middle}.sdel.adel{height:auto;padding:0;border:0;border-radius:0;width:96px;background:#c0392b;color:#fff;font-size:17px}.sdel{visibility:hidden;position:absolute;right:0;top:0;bottom:0;width:96px;border:0;background:#c0392b;color:#fff;font-size:17px;font-weight:700;font-family:inherit}.psec{padding:16px 20px 6px;font-size:15px;font-weight:700;letter-spacing:.06em;color:#8fa6c4;text-transform:uppercase}.hrow.tocando .t2{color:#6fd08c;font-weight:600}
+.hrow:active{background:#2f4156}.drow.sel{background:#2f4156;box-shadow:inset 4px 0 0 #b4cdf6}.swrap{position:relative;overflow:hidden;border-bottom:1px solid #3a4b5f}.swrap .hrow{position:relative;z-index:1;background:#283747;transition:width .2s;border-bottom:0;touch-action:pan-y}.swrap.open .hrow{width:calc(100% - 96px)}.swrap.open .sdel{visibility:visible}.selck{flex:none;width:30px;height:30px;border-radius:8px;border:2px solid #6b7f97;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:transparent;margin-right:-4px}.selon .selck{background:#b4cdf6;border-color:#b4cdf6;color:#1b2735}#hlist.selm .aadd,#hlist.selm .chev{display:none}#hselbar{display:flex;gap:10px;padding:0 20px 8px;flex:none;justify-content:flex-end}#hselbar button{height:42px;padding:0 16px;border-radius:12px;border:1px solid #4a5d74;background:none;color:#e8eef8;font-size:16px;font-weight:600;font-family:inherit}#hselbar .red{color:#fff;background:#c0392b;border-color:#c0392b}#hselbar .red[disabled]{opacity:.35}#home.det #hselbar{display:none}.nov{display:inline-block;margin-left:10px;padding:2px 10px;border-radius:999px;background:#b4cdf6;color:#1b2735;font-size:13px;font-weight:700;vertical-align:middle}.sdel.adel{height:auto;padding:0;border:0;border-radius:0;width:96px;background:#c0392b;color:#fff;font-size:17px}.sdel{visibility:hidden;position:absolute;right:0;top:0;bottom:0;width:96px;border:0;background:#c0392b;color:#fff;font-size:17px;font-weight:700;font-family:inherit}.psec{padding:16px 20px 6px;font-size:15px;font-weight:700;letter-spacing:.06em;color:#8fa6c4;text-transform:uppercase}.hrow.tocando .t2{color:#6fd08c;font-weight:600}
 .hrow .tx{flex:1;min-width:0}
 .hrow .t1{font-size:22px;color:#e8eef8;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hrow .t2{font-size:15px;color:#9fb2cc;margin-top:3px}
@@ -729,7 +729,7 @@ function drawHome(){
   if(showOpen!=null){ drawDet(); return; } if(aba==='s'){ drawShows(); return; } if(aba==='a'){ drawAud(); return; }
   
   const ls=LIB.map((e,i)=>({e,i})).filter(x=>x.e.k!=='blank'&&(!q||x.e.n.toLowerCase().includes(q))).sort((a,b)=>a.e.n.localeCompare(b.e.n,'pt',{sensitivity:'base'}));
-  L.innerHTML=ls.length?ls.map(x=>`<div class="swrap"><button class="hrow" data-i="${x.i}"><div class="tx"><div class="t1">${esc(x.e.n)}${window.NEWIMP&&window.NEWIMP.has(x.e.n)?'<span class="nov">Importada agora</span>':''}</div><div class="t2">${x.e.k==='blank'?'só áudio':x.e.p+' '+(x.e.p===1?'página':'páginas')}</div></div><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9fb2cc" stroke-width="2" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button><button class="sdel" data-li="${x.i}" aria-label="Apagar letra">Apagar</button></div>`).join(''):`<div class="hvazio">${LIB.length?'Nada encontrado.':'Nenhuma música ainda. Use Importar.'}</div>`;
+  L.innerHTML=ls.length?ls.map(x=>`<div class="swrap"><button class="hrow" data-i="${x.i}"><div class="tx"><div class="t1">${esc(x.e.n)}${window.NEWIMP&&window.NEWIMP.has(x.e.n)?'<span class="nov">Importada agora</span>':''}</div><div class="t2">${x.e.k==='blank'?'só áudio':x.e.p+' '+(x.e.p===1?'página':'páginas')}</div></div><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9fb2cc" stroke-width="2" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button><button class="sdel" data-li="${x.i}" aria-label="Apagar letra">Apagar</button></div>`).join(''):`<div class="hvazio">${LIB.length?'Nada encontrado.':'Nenhuma música ainda. Use Importar.'}</div>`; selDecor();
 }
 window.syncHome=()=>{ if(showOpen!=null) drawDet(); };
 $('hlist').onclick=e=>{ const b=e.target.closest('.hrow'); if(!b) return; if(b.dataset.sid){ openShow(b.dataset.sid,false); return; } if(b.dataset.i===undefined) return; (window.NEWIMP&&window.NEWIMP.delete(LIB[+b.dataset.i].n),openEntry(LIB[+b.dataset.i])).catch(()=>toast('Não consegui abrir essa música.')); };
@@ -946,7 +946,7 @@ function itemAu(it,e){ if(it.a==='-') return null; const x=it.a?audById(it.a):nu
 /* lista de shows: deslizar para a esquerda mostra Apagar */
 (function(){ const L=$('hlist'); let sx=0,sy=0,row=null,mv=false;
   const fecha=()=>L.querySelectorAll('.swrap.open').forEach(w=>w.classList.remove('open'));
-  L.addEventListener('pointerdown',e=>{ const w=e.target.closest('.swrap'); if(!w){ return; } row=w; sx=e.clientX; sy=e.clientY; mv=false; });
+  L.addEventListener('pointerdown',e=>{ if(window.SELM) return; const w=e.target.closest('.swrap'); if(!w){ return; } row=w; sx=e.clientX; sy=e.clientY; mv=false; });
   L.addEventListener('pointermove',e=>{ if(!row) return; const dx=e.clientX-sx, dy=e.clientY-sy; if(Math.abs(dx)>14&&Math.abs(dx)>Math.abs(dy)*1.5){ mv=true; if(dx<0){ L.querySelectorAll('.swrap.open').forEach(w=>{ if(w!==row) w.classList.remove('open'); }); row.classList.add('open'); } else row.classList.remove('open'); } });
   const fim=()=>{ row=null; };
   L.addEventListener('pointerup',fim); L.addEventListener('pointercancel',fim);
@@ -955,6 +955,40 @@ function itemAu(it,e){ if(it.a==='-') return null; const x=it.a?audById(it.a):nu
     const d=e.target.closest('.sdel[data-sid]'); if(d){ e.stopPropagation(); const sh=getShow(d.dataset.sid); if(!sh) return; const ok=await ask({title:'Apagar "'+sh.name+'"?',msg:'As músicas continuam na biblioteca.',ok:'Apagar',danger:true}); if(ok){ SHOWS.splice(SHOWS.indexOf(sh),1); drawHome(); toast('Show apagado'); } else fecha(); return; }
     if(L.querySelector('.swrap.open')&&e.target.closest('.swrap .hrow')){ e.stopPropagation(); e.preventDefault(); fecha(); } },true);
 })();
+
+/* selecionar e apagar vários (Shows, Letras, Áudios) */
+window.SELM=false; const SELS=new Set();
+const rowKey=r=>r.dataset.sid?'s:'+r.dataset.sid:(r.dataset.i!==undefined?(LIB[+r.dataset.i]?'l:'+LIB[+r.dataset.i].n:null):(r.dataset.aid?'a:'+r.dataset.aid:null));
+const selRows=()=>[...$('hlist').querySelectorAll('.hrow')].filter(r=>rowKey(r));
+function selBar(){ let b=$('hselbar'); if(!b){ b=document.createElement('div'); b.id='hselbar'; $('hlist').before(b); b.addEventListener('click',selClick); }
+  const vis=selRows(); if(!vis.length&&!window.SELM){ b.style.display='none'; return; } b.style.display='';
+  if(!window.SELM){ b.innerHTML='<button data-b="on">Selecionar</button>'; return; }
+  const n=vis.filter(r=>SELS.has(rowKey(r))).length, all=vis.length>0&&n===vis.length;
+  b.innerHTML='<button data-b="all">'+(all?'Limpar':'Selecionar tudo')+'</button><button data-b="off">Cancelar</button><button class="red" data-b="del"'+(n?'':' disabled')+'>Apagar ('+n+')</button>'; }
+function selDecor(){ const L=$('hlist'); L.classList.toggle('selm',!!window.SELM);
+  if(window.SELM) selRows().forEach(r=>{ r.insertAdjacentHTML('afterbegin','<span class="selck">✓</span>'); r.classList.toggle('selon',SELS.has(rowKey(r))); });
+  selBar(); }
+$('hlist').addEventListener('click',e=>{ if(!window.SELM) return; const r=e.target.closest('.hrow'); if(!r||!rowKey(r)) return; e.stopPropagation(); e.preventDefault(); const k=rowKey(r); if(SELS.has(k)){ SELS.delete(k); r.classList.remove('selon'); } else { SELS.add(k); r.classList.add('selon'); } selBar(); },true);
+function apagarAudioSel(x){ for(const s of SHOWS) for(const it of s.items){ if(it.t==='s'&&!it.a){ const j=libIdx(it.n); if(j>=0&&LIB[j].au===x) it.a=x._id; } }
+  LIB.forEach(en=>{ if(en.au===x) en.au=null; });
+  AUD.splice(AUD.indexOf(x),1); const mi=media.indexOf(x); if(mi>=0){ if(cur===mi){ try{ au.pause(); }catch(_){} cur=-1; au.removeAttribute('src'); try{ au.load(); }catch(_){} } else if(cur>mi) cur--; media.splice(mi,1); }
+  try{ URL.revokeObjectURL(x.url); }catch(_){} try{ window.palcoDelAudio&&window.palcoDelAudio(x._id); }catch(_){} }
+async function selClick(e){ const bt=e.target.closest('button'); if(!bt||bt.disabled) return; const a=bt.dataset.b;
+  if(a==='on'){ window.SELM=true; SELS.clear(); drawHome(); return; }
+  if(a==='off'){ window.SELM=false; SELS.clear(); drawHome(); return; }
+  if(a==='all'){ const vis=selRows(), all=vis.every(r=>SELS.has(rowKey(r))); vis.forEach(r=>{ const k=rowKey(r); if(all){ SELS.delete(k); r.classList.remove('selon'); } else { SELS.add(k); r.classList.add('selon'); } }); selBar(); return; }
+  if(a!=='del') return;
+  const keys=selRows().map(rowKey).filter(k=>SELS.has(k)); const n=keys.length; if(!n) return;
+  const tx=aba==='s'?[(n===1?' show':' shows'),'As músicas continuam na biblioteca.']:aba==='m'?[(n===1?' letra':' letras'),'Só as cópias dentro do app são apagadas, os arquivos originais continuam onde estão. Músicas de shows que usam essas letras ficam marcadas como faltando.']:[(n===1?' áudio':' áudios'),'Só as cópias dentro do app são apagadas, os arquivos originais continuam onde estão. As músicas dos shows ficam "Sem áudio".'];
+  const ok=await ask({title:'Apagar '+n+tx[0]+'?',msg:tx[1],ok:'Apagar',danger:true}); if(!ok) return;
+  for(const k of keys){ const id=k.slice(2);
+    if(aba==='s'){ const sh=getShow(id); if(sh) SHOWS.splice(SHOWS.indexOf(sh),1); }
+    else if(aba==='m'){ const en=LIB.find(z=>z.n===id); if(en){ LIB.splice(LIB.indexOf(en),1); try{ window.palcoDelLib&&window.palcoDelLib(id); }catch(_){} } }
+    else { const x=audById(id); if(x) apagarAudioSel(x); } }
+  window.SELM=false; SELS.clear(); try{ window.palcoSave&&window.palcoSave(); }catch(_){} try{ drawMedia(); }catch(_){} drawHome(); toast(n+(n===1?' apagado':' apagados')); }
+(function(){ const a=drawShows; drawShows=function(){ a(); selDecor(); };
+  const b=window.drawAud; window.drawAud=function(){ b(); selDecor(); };
+  const c=setTab; setTab=function(t){ window.SELM=false; SELS.clear(); c(t); }; })();
 syncHome(); drawHome();
 /* backup leve em arquivo: letras, shows e ligações de áudio (sem os MP3) */
 (function(){
