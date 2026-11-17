@@ -728,7 +728,7 @@ function drawHome(){
   $('home').classList.toggle('det',showOpen!=null); $('home').classList.toggle('sh',showOpen==null&&aba==='s'); $('home').classList.toggle('au',showOpen==null&&aba==='a'); $('himp').textContent=showOpen!=null?'Começar':'Importar .lset ou PDF';
   if(showOpen!=null){ drawDet(); return; } if(aba==='s'){ drawShows(); return; } if(aba==='a'){ drawAud(); return; }
   
-  const ls=LIB.map((e,i)=>({e,i})).filter(x=>!q||x.e.n.toLowerCase().includes(q)).sort((a,b)=>a.e.n.localeCompare(b.e.n,'pt',{sensitivity:'base'}));
+  const ls=LIB.map((e,i)=>({e,i})).filter(x=>x.e.k!=='blank'&&(!q||x.e.n.toLowerCase().includes(q))).sort((a,b)=>a.e.n.localeCompare(b.e.n,'pt',{sensitivity:'base'}));
   L.innerHTML=ls.length?ls.map(x=>`<button class="hrow" data-i="${x.i}"><div class="tx"><div class="t1">${esc(x.e.n)}</div><div class="t2">${x.e.k==='blank'?'só áudio':x.e.p+' '+(x.e.p===1?'página':'páginas')}</div></div><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9fb2cc" stroke-width="2" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>`).join(''):`<div class="hvazio">${LIB.length?'Nada encontrado.':'Nenhuma música ainda. Use Importar.'}</div>`;
 }
 window.syncHome=()=>{ if(showOpen!=null) drawDet(); };
@@ -809,7 +809,7 @@ function openPick(aud){ pickAud=aud===true; $('ph').textContent=pickAud?'Adicion
 function closePick(){ pickOpen=false; $('pick').classList.remove('on'); }
 function drawPick(){
   const s=getShow(showOpen); if(!s){ closePick(); return; } const q=$('pq').value.trim().toLowerCase(); const have=new Set(s.items.filter(i=>i.t==='s').map(i=>i.n.toLowerCase()));
-  const ls=pickAud?[]:LIB.filter(e=>!q||e.n.toLowerCase().includes(q)).sort((a,b)=>a.n.localeCompare(b.n,'pt',{sensitivity:'base'}));
+  const ls=pickAud?[]:LIB.filter(e=>e.k!=='blank'&&(!q||e.n.toLowerCase().includes(q))).sort((a,b)=>a.n.localeCompare(b.n,'pt',{sensitivity:'base'}));
   $('plist').innerHTML=ls.length?ls.map(e=>{ const k=e.n.toLowerCase(), inn=have.has(k), on=pickSel.has(k); return `<button class="prow${on?' on':''}" data-k="${esc(k)}"><span class="ck">${on?'✓':''}</span><span class="tx"><span class="t1">${esc(e.n)}</span>${inn?'<span class="t2">já está neste show</span>':''}</span></button>`; }).join(''):(pickAud?'':'<div class="hvazio">Biblioteca vazia. Use Importar.</div>');
   if(mode==='solo'&&pickAud&&typeof AUD!=='undefined'){ const nm=x=>{ const p=x.name.split(/\s+-\s+/); return (p.length>1?p.slice(1).join(' - '):x.name).trim(); };
     const as=AUD.filter(x=>!q||x.name.toLowerCase().includes(q)).sort((a,b)=>a.name.localeCompare(b.name,'pt',{sensitivity:'base'}));
