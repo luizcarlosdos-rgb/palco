@@ -768,9 +768,9 @@ $('dlist').onclick=async e=>{
   else if(a==='rm'){ s.items.splice(i,1); }
   else if(a==='rn'){ const v=await ask({title:'Nome do bloco',value:s.items[i].name,ok:'Salvar'}); if(v) s.items[i].name=v; }
   else if(a==='au'){ openApk(i); return; }
-  else if(a==='addmp3'){ addMp3('show'); return; }
+  else if(a==='addmp3'){ openPick(true); return; }
   else if(a==='paste'){ pasteList(); return; }
-  else if(a==='addm'){ openPick(); return; }
+  else if(a==='addm'){ openPick(false); return; }
   else if(a==='addb'){ const v=await ask({title:'Novo bloco',value:'',ok:'Criar'}); if(v) s.items.push({t:'b',name:v}); }
   else if(a==='ren'){ const v=await ask({title:'Nome do show',value:s.name,ok:'Salvar'}); if(v) s.name=v; }
   else if(a==='dup'){ SHOWS.push({id:uid(),name:s.name+' (cópia)',items:s.items.map(x=>({...x}))}); toast('Show duplicado.'); }
@@ -784,19 +784,20 @@ function loadAu(en){
   const ax=audFor(en); if(ax){ const i=media.indexOf(ax); if(i>=0){ if(i!==cur) pick(i); return; } }
   if(cur>=0){ au.pause(); au.removeAttribute('src'); au.load(); cur=-1; $('seek').value=0; $('t0').textContent='00:00'; $('t1').textContent='00:00'; drawMedia(); ppState(); }
 }
-function openPick(){ pickOpen=true; pickSel.clear(); $('pq').value=''; $('pick').classList.add('on'); drawPick(); }
+let pickAud=false;
+function openPick(aud){ pickAud=aud===true; $('ph').textContent=pickAud?'Adicionar MP3':'Adicionar ao show'; $('pimp').textContent=pickAud?'Buscar no aparelho':'Importar'; pickOpen=true; pickSel.clear(); $('pq').value=''; $('pick').classList.add('on'); drawPick(); }
 function closePick(){ pickOpen=false; $('pick').classList.remove('on'); }
 function drawPick(){
   const s=getShow(showOpen); if(!s){ closePick(); return; } const q=$('pq').value.trim().toLowerCase(); const have=new Set(s.items.filter(i=>i.t==='s').map(i=>i.n.toLowerCase()));
-  const ls=LIB.filter(e=>!q||e.n.toLowerCase().includes(q)).sort((a,b)=>a.n.localeCompare(b.n,'pt',{sensitivity:'base'}));
-  $('plist').innerHTML=ls.length?ls.map(e=>{ const k=e.n.toLowerCase(), inn=have.has(k), on=pickSel.has(k); return `<button class="prow${on?' on':''}" data-k="${esc(k)}"><span class="ck">${on?'✓':''}</span><span class="tx"><span class="t1">${esc(e.n)}</span>${inn?'<span class="t2">já está neste show</span>':''}</span></button>`; }).join(''):'<div class="hvazio">Biblioteca vazia. Use Importar.</div>';
+  const ls=pickAud?[]:LIB.filter(e=>!q||e.n.toLowerCase().includes(q)).sort((a,b)=>a.n.localeCompare(b.n,'pt',{sensitivity:'base'}));
+  $('plist').innerHTML=ls.length?ls.map(e=>{ const k=e.n.toLowerCase(), inn=have.has(k), on=pickSel.has(k); return `<button class="prow${on?' on':''}" data-k="${esc(k)}"><span class="ck">${on?'✓':''}</span><span class="tx"><span class="t1">${esc(e.n)}</span>${inn?'<span class="t2">já está neste show</span>':''}</span></button>`; }).join(''):(pickAud?'':'<div class="hvazio">Biblioteca vazia. Use Importar.</div>');
   if(mode==='solo'&&typeof AUD!=='undefined'){ const nm=x=>{ const p=x.name.split(/\s+-\s+/); return (p.length>1?p.slice(1).join(' - '):x.name).trim(); };
     const as=AUD.filter(x=>!q||x.name.toLowerCase().includes(q)).sort((a,b)=>a.name.localeCompare(b.name,'pt',{sensitivity:'base'}));
-    if(as.length) $('plist').insertAdjacentHTML('beforeend','<div class="psec">Áudios guardados</div>'+as.map(x=>{ const k='aud:'+x._id, on=pickSel.has(k), inn=have.has(nm(x).toLowerCase()); return `<button class="prow${on?' on':''}" data-k="${esc(k)}"><span class="ck">${on?'✓':''}</span><span class="tx"><span class="t1">${esc(x.name)}</span>${inn?'<span class="t2">já está neste show</span>':''}</span></button>`; }).join('')); }
+    if(!as.length&&pickAud) $('plist').innerHTML='<div class="hvazio">Nenhum áudio guardado. Toque em Buscar no aparelho.</div>'; if(as.length) $('plist').insertAdjacentHTML('beforeend',(pickAud?'':'<div class="psec">Áudios guardados</div>')+as.map(x=>{ const k='aud:'+x._id, on=pickSel.has(k), inn=have.has(nm(x).toLowerCase()); return `<button class="prow${on?' on':''}" data-k="${esc(k)}"><span class="ck">${on?'✓':''}</span><span class="tx"><span class="t1">${esc(x.name)}</span>${inn?'<span class="t2">já está neste show</span>':''}</span></button>`; }).join('')); }
   $('pok').textContent=pickSel.size?'Adicionar ('+pickSel.size+')':'Adicionar'; $('pok').disabled=!pickSel.size;
 }
 $('plist').onclick=e=>{ const b=e.target.closest('.prow'); if(!b) return; const k=b.dataset.k; if(pickSel.has(k)) pickSel.delete(k); else pickSel.add(k); drawPick(); };
-$('pq').oninput=drawPick; $('pcan').onclick=closePick; $('pimp').onclick=()=>{ $('file').accept='.lset,.pdf,.json,application/pdf,application/json,application/octet-stream'; $('file').multiple=true; $('file').click(); };
+$('pq').oninput=drawPick; $('pcan').onclick=closePick; $('pimp').onclick=()=>{ if(pickAud){ closePick(); addMp3('show'); return; } $('file').accept='.lset,.pdf,.json,application/pdf,application/json,application/octet-stream'; $('file').multiple=true; $('file').click(); };
 $('pok').onclick=()=>{ const s=getShow(showOpen); if(!s) return closePick(); const have=new Set(s.items.filter(i=>i.t==='s').map(i=>i.n.toLowerCase())); pickSel.forEach(k=>{ if(k.indexOf('aud:')===0){ const x=AUD.find(z=>z._id===k.slice(4)); if(!x) return; const p=x.name.split(/\s+-\s+/); const title=(p.length>1?p.slice(1).join(' - '):x.name).trim(); let j=libIdx(title.toLowerCase()); if(j<0){ LIB.push({n:title,k:'blank',o:null,p:1}); j=LIB.length-1; } s.items.push({t:'s',n:LIB[j].n,a:x._id}); return; } const j=libIdx(k); if(j>=0) s.items.push({t:'s',n:LIB[j].n}); }); try{ window.palcoSave&&window.palcoSave(); }catch(_){} closePick(); drawDet(); };
 async function afterImp(en,fn){ if(pickOpen){ pickSel.add(en.n.toLowerCase()); drawPick(); toast('Importado: '+fn); } else { await openEntry(en); toast('Aberto: '+fn); } }
 /* Solo: biblioteca de áudios, adicionar MP3, escolher áudio do show, colar lista */
