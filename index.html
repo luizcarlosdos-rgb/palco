@@ -529,7 +529,7 @@ function render(){
   const sc=song.scores[0]; if(sc.type==='IMG'){ renderImg(sc); return; } document.body.classList.toggle('cel',celOn()); const k=keyItem();
   const T={ls:((itemLA(k).l-refL)%7+7)%7,sh:currentShift(),pref:k[2]}; TG=itemLA(k);
   const kp=tr({l:bkL,a:bkA},T); const nm=LET[kp.l]+sg(kp.a)+(bkMinor?'m':'');
-  let r; if(celOn()){ const st=$('stage'), sw=st.clientWidth||innerWidth, sh=st.clientHeight||innerHeight; const sc_=(x,wu)=>Math.min(sw/wu, sh/(wu/x.asp)); CELM=2; const a=build(sc,T,nm,pageIdx); CELM=1; const b=build(sc,T,nm,pageIdx); if(sc_(a,827)>=sc_(b,440)){ CELM=2; r=a; } else { CELM=1; r=b; } } else { CELM=0; r=build(sc,T,nm,pageIdx); }
+  let r; if(celOn()){ const st=$('stage'), sw=st.clientWidth||innerWidth, sh=st.clientHeight||innerHeight; const sc_=(x,wu)=>Math.min(sw/wu, sh/(wu/x.asp)); CELM=2; const a=build(sc,T,nm,pageIdx); CELM=1; const b=build(sc,T,nm,pageIdx); CELM=2; r=a; } else { CELM=0; r=build(sc,T,nm,pageIdx); }
   const dk=!document.body.classList.contains('claro'); ASP=r.asp; $('wrap').innerHTML=r.svg.replace(/"#(111|222)"/g,'"currentColor"').replace(/fill="#fff" stroke="currentColor"/g,'fill="none" stroke="currentColor"').replace(/#d6291f/g,dk?'#ff6b6b':'#d6291f'); sizeSvg(); try{fitChords()}catch(e){} try{avoid()}catch(e){}
   $('tomv').textContent=k[0]; $('tomv2').textContent=k[0];
   updateNav();
