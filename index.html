@@ -106,7 +106,7 @@ body.solo .edge{display:flex}
 #hsearch input::placeholder{color:#9fb2cc}
 #hlist{flex:1;min-height:0;overflow:auto;scrollbar-width:none}#hlist::-webkit-scrollbar{display:none}
 .hrow{display:flex;align-items:center;gap:16px;min-height:72px;width:100%;padding:0 20px;border:0;border-bottom:1px solid #3a4b5f;background:none;text-align:left;color:inherit;font-family:inherit}
-.hrow:active{background:#2f4156}.psec{padding:16px 20px 6px;font-size:15px;font-weight:700;letter-spacing:.06em;color:#8fa6c4;text-transform:uppercase}.hrow.tocando .t2{color:#6fd08c;font-weight:600}
+.hrow:active{background:#2f4156}.drow.sel{background:#2f4156;box-shadow:inset 4px 0 0 #b4cdf6}.psec{padding:16px 20px 6px;font-size:15px;font-weight:700;letter-spacing:.06em;color:#8fa6c4;text-transform:uppercase}.hrow.tocando .t2{color:#6fd08c;font-weight:600}
 .hrow .tx{flex:1;min-width:0}
 .hrow .t1{font-size:22px;color:#e8eef8;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hrow .t2{font-size:15px;color:#9fb2cc;margin-top:3px}
@@ -752,17 +752,17 @@ function openShow(id,edit){ showOpen=id; editing=!!edit; drawHome(); $('dlist').
 function drawDet(){
   const s=getShow(showOpen); if(!s){ showOpen=null; drawHome(); return; }
   $('dname').textContent=s.name; $('dedit').textContent=editing?'Pronto':'Editar'; $('home').classList.toggle('edt',editing);
-  let k=0; const last=s.items.length-1;
+  if(!editing) selIdx=-1; let k=0; const last=s.items.length-1; const selIt=editing&&selIdx>=0?s.items[selIdx]:null, selJ=selIt&&selIt.t==='s'?libIdx(selIt.n):-1, selBlank=selJ>=0&&LIB[selJ].k==='blank';
   let h=s.items.map((it,i)=>{
     const ctl=editing?`<div class="dc"><button data-a="up" data-i="${i}" aria-label="Subir" ${i===0?'disabled':''}>▲</button><button data-a="dn" data-i="${i}" aria-label="Descer" ${i===last?'disabled':''}>▼</button><button class="x" data-a="rm" data-i="${i}" aria-label="Tirar do show">✕</button></div>`:'';
     if(it.t==='b') return `<div class="drow blk"><div class="bn" ${editing?`data-a="rn" data-i="${i}"`:''}>${esc(it.name)}</div>${ctl}</div>`;
     const j=libIdx(it.n), e=j>=0?LIB[j]:null; k++;
     const sc=e&&e.k==='lset'?((e.o.scores||[])[0]||{}):{};
     const parts=[sc.author, e&&e.k==='blank'?'Sem letra':null, e?(mode==='solo'?(itemAu(it,e)?'♪ '+itemAu(it,e).name:'Sem áudio'):null):'não está na biblioteca'].filter(Boolean); const gone=mode==='solo'&&e&&!itemAu(it,e)&&it.a&&it.a!=='-'; let t2=esc(parts.join(' · ')); if(gone) t2=t2.replace('Sem áudio','<span class="gone">Sem áudio</span>');
-    return `<div class="drow${e?'':' mis'}"><button class="dmain" data-a="open" data-i="${i}"><span class="dn">${k}</span><span class="tx"><span class="t1">${esc(it.n)}</span><span class="t2">${t2}</span></span></button>${editing&&e&&e.k==='blank'?`<button class="dau" data-a="lt" data-i="${i}">Letra</button>`:''}${editing&&mode==='solo'&&e?`<button class="dau" data-a="au" data-i="${i}">MP3</button>`:''}${ctl}</div>`;
+    return `<div class="drow${e?'':' mis'}${editing&&i===selIdx?' sel':''}"><button class="dmain" data-a="open" data-i="${i}"><span class="dn">${k}</span><span class="tx"><span class="t1">${esc(it.n)}</span><span class="t2">${t2}</span></span></button>${editing&&e&&e.k==='blank'?`<button class="dau" data-a="lt" data-i="${i}">Letra</button>`:''}${editing&&mode==='solo'&&e?`<button class="dau" data-a="au" data-i="${i}">MP3</button>`:''}${ctl}</div>`;
   }).join('');
   if(!h) h='<div class="hvazio">'+(editing?'Show vazio. Adicione músicas abaixo.':'Show vazio. Toque em Editar.')+'</div>';
-  if(editing) h+='<div id="dtools">'+(mode==='solo'?'<button class="pri" data-a="addmp3">Adicionar MP3</button>':'')+'<button data-a="addm">＋ Letra</button><button data-a="addb">＋ Bloco</button><button data-a="ren">Renomear</button><button data-a="dup">Duplicar</button><button class="red" data-a="del">Apagar show</button></div>';
+  if(editing) h+='<div id="dtools">'+(mode==='solo'?'<button class="pri" data-a="addmp3">Adicionar MP3</button>':'')+'<button data-a="addm"'+(selBlank?' class="pri"':'')+'>'+(selBlank?'Escolher letra':'＋ Letra')+'</button><button data-a="addb">＋ Bloco</button><button data-a="ren">Renomear</button><button data-a="dup">Duplicar</button><button class="red" data-a="del">Apagar show</button></div>';
   $('dlist').innerHTML=h;
 }
 function ask({title,value=null,ok='OK',danger=false,msg=''}){ return new Promise(res=>{
@@ -776,7 +776,8 @@ $('dback').onclick=()=>{ showOpen=null; editing=false; drawHome(); };
 $('dedit').onclick=()=>{ editing=!editing; drawDet(); };
 $('dlist').onclick=async e=>{
   const b=e.target.closest('[data-a]'); if(!b) return; const s=getShow(showOpen); if(!s) return; const i=+b.dataset.i, a=b.dataset.a;
-  if(a==='open'){ if(editing) return; const j=libIdx(s.items[i].n); if(j<0){ toast('Essa música não está na biblioteca. Importe de novo.'); return; } openEntry(LIB[j],{id:s.id,pos:i}).catch(()=>toast('Não consegui abrir essa música.')); return; }
+  if(a==='open'){ if(editing){ selIdx=(selIdx===i?-1:i); drawDet(); return; } const j=libIdx(s.items[i].n); if(j<0){ toast('Essa música não está na biblioteca. Importe de novo.'); return; } openEntry(LIB[j],{id:s.id,pos:i}).catch(()=>toast('Não consegui abrir essa música.')); return; }
+  if(a==='up'||a==='dn'||a==='rm') selIdx=-1;
   if(a==='up'&&i>0){ const t=s.items[i]; s.items[i]=s.items[i-1]; s.items[i-1]=t; }
   else if(a==='dn'&&i<s.items.length-1){ const t=s.items[i]; s.items[i]=s.items[i+1]; s.items[i+1]=t; }
   else if(a==='rm'){ s.items.splice(i,1); }
@@ -785,7 +786,7 @@ $('dlist').onclick=async e=>{
   else if(a==='lt'){ const j=libIdx(getShow(showOpen).items[i].n); if(j>=0) letraDoApp(LIB[j],true); return; }
   else if(a==='addmp3'){ openPick(true); return; }
   else if(a==='paste'){ pasteList(); return; }
-  else if(a==='addm'){ openPick(false); return; }
+  else if(a==='addm'){ const it=selIdx>=0&&s.items[selIdx], j=it&&it.t==='s'?libIdx(it.n):-1; if(j>=0&&LIB[j].k==='blank'){ selIdx=-1; letraDoApp(LIB[j],true); return; } openPick(false); return; }
   else if(a==='addb'){ const v=await ask({title:'Novo bloco',value:'',ok:'Criar'}); if(v) s.items.push({t:'b',name:v}); }
   else if(a==='ren'){ const v=await ask({title:'Nome do show',value:s.name,ok:'Salvar'}); if(v) s.name=v; }
   else if(a==='dup'){ SHOWS.push({id:uid(),name:s.name+' (cópia)',items:s.items.map(x=>({...x}))}); toast('Show duplicado.'); }
@@ -799,7 +800,7 @@ function loadAu(en){
   const ax=audFor(en); if(ax){ const i=media.indexOf(ax); if(i>=0){ if(i!==cur) pick(i); return; } }
   if(cur>=0){ au.pause(); au.removeAttribute('src'); au.load(); cur=-1; $('seek').value=0; $('t0').textContent='00:00'; $('t1').textContent='00:00'; drawMedia(); ppState(); }
 }
-let pickAud=false;
+let pickAud=false; let selIdx=-1;
 function openPick(aud){ pickAud=aud===true; $('ph').textContent=pickAud?'Adicionar MP3':'Adicionar ao show'; $('pimp').textContent=pickAud?'Buscar no aparelho':'Importar'; pickOpen=true; pickSel.clear(); $('pq').value=''; $('pick').classList.add('on'); drawPick(); }
 function closePick(){ pickOpen=false; $('pick').classList.remove('on'); }
 function drawPick(){
