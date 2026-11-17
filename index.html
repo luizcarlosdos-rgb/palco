@@ -35,7 +35,7 @@ html,body{margin:0;height:100%;background:#0e0f11;color:#e8eaed;font-family:syst
 .ib[disabled]{opacity:.3}
 #stage{flex:1;min-height:0;min-width:0;overflow:auto;scrollbar-width:none;display:flex;container-type:size;background:#283747;-webkit-overflow-scrolling:touch}body.claro #stage{background:#d9dde6}
 #wrap{margin:auto;flex:none;width:calc(min(100cqw,100cqh*var(--asp,.7071))*var(--z,1))}
-#wrap svg{display:block;width:100%;height:auto;background:#283747;color:#b4cdf6}#wrap canvas{display:block;width:100%;height:auto;background:#fff}body.claro #wrap svg{background:#fff;color:#111}
+body.cel:not(.pdf) #wrap{width:calc(100cqw*var(--z,1));margin:0 auto}#wrap svg{display:block;width:100%;height:auto;background:#283747;color:#b4cdf6}#wrap canvas{display:block;width:100%;height:auto;background:#fff}body.claro #wrap svg{background:#fff;color:#111}
 body.solo #bot{display:none}body.banda #abot,body.banda .edge,body.banda #tomTop{display:none}
 body.pdf #tom,body.pdf #tomTop{display:none!important}
 #abot{flex:none;background:#16181c;border-top:1px solid #262a30;padding:8px 14px 12px;position:relative}
@@ -356,10 +356,14 @@ function rhythm(syms,xf,ry){
   return o;
 }
 
+function celOn(){ return kind!=='pdf'&&innerWidth<600; }
+function splitRows(rows){ const out=[]; rows.forEach(row=>{ const bars=row.bars||[]; if(row.specialType==='STRUCTURE'||bars.length<=2){ out.push(row); return; }
+  const cl=b=>{ const c={...b}; ['leftLine','rightLine'].forEach(k=>{ if(c[k]&&c[k].fixedPos!=null){ c[k]={...c[k]}; delete c[k].fixedPos; } }); return c; };
+  for(let i=0;i<bars.length;i+=2) out.push(i?{...row,bars:bars.slice(i,i+2).map(cl),offsetY:0}:{...row,bars:bars.slice(0,2).map(cl)}); }); return out; }
 function chordLaneId(sc){ const ls=((sc.layout||{}).lanes||[]).filter(l=>l.type==='CHORDS'); const a=ls.find(l=>l.showBars)||ls.find(l=>l.id==='mc')||ls[ls.length-1]; return a?a.id:'mc'; }
 function build(sc,T,keyLabel,pi){
-  const W=827,L=60,R=790;
-  const page=sc.pages[pi]; const lanes=(sc.layout&&sc.layout.lanes)||[];
+  const CEL=celOn(), W=CEL?440:827, L=CEL?46:60, R=W-37;
+  const page=CEL?{...sc.pages[pi],rows:splitRows(sc.pages[pi].rows)}:sc.pages[pi]; const lanes=(sc.layout&&sc.layout.lanes)||[];
   const rl=lanes.find(l=>l.type==='RHYTHMIC')||{}, rid=rl.id, cid=chordLaneId(sc);
   const cl=lanes.find(l=>l.id===cid)||{}, iR=lanes.findIndex(l=>l.type==='RHYTHMIC'), iC=lanes.findIndex(l=>l.id===cid);
   const below=iR>=0&&iC>=0&&iR>iC, staff=!!rl.showStaves, rrat=Math.max(.3,Math.min(1,rl.heightRatio!=null?rl.heightRatio:1));
@@ -369,13 +373,13 @@ function build(sc,T,keyLabel,pi){
   let o='';
   if(pi===0){
     const bv=String(sc.baseTempoBeatValue||'4'); const sym=bv==='8'?'♪':bv==='4+'?'♩.':'♩';
-    if(sc.baseTempo) o+=`<text class="lb" x="42" y="72" style="font-size:24px">${sym} = ${esc(sc.baseTempo)}</text>`;
-    o+=`<text class="tt" x="${W/2}" y="54" text-anchor="middle">${esc(sc.title||'')}</text>`;
-    const kl=String(keyLabel), km=/m$/.test(kl); o+=`<text class="tt" x="790" y="54" text-anchor="end" style="font-size:38px">(${esc(km?kl.slice(0,-1):kl)}${km?'<tspan class="qm" style="font-size:30px">m</tspan>':''})</text>`;
-    if(sc.author) o+=`<text class="lb" x="790" y="80" text-anchor="end" style="font-size:22px">${esc(sc.author)}</text>`;
+    if(sc.baseTempo) o+=`<text class="lb" x="42" y="${CEL?118:72}" style="font-size:24px">${sym} = ${esc(sc.baseTempo)}</text>`;
+    o+=`<text class="tt" x="${W/2}" y="54" text-anchor="middle"${CEL?' style="font-size:36px"':''}>${esc(sc.title||'')}</text>`;
+    const kl=String(keyLabel), km=/m$/.test(kl); o+=`<text class="tt" x="${R}" y="${CEL?112:54}" text-anchor="end" style="font-size:${CEL?34:38}px">(${esc(km?kl.slice(0,-1):kl)}${km?'<tspan class="qm" style="font-size:30px">m</tspan>':''})</text>`;
+    if(sc.author) o+=`<text class="lb" x="${CEL?W/2:R}" y="${CEL?86:80}" text-anchor="${CEL?'middle':'end'}" style="font-size:22px">${esc(sc.author)}</text>`;
     if(sc.subtitle) o+=`<text class="lb" x="${W/2}" y="80" text-anchor="middle">${esc(sc.subtitle)}</text>`;
   }
-  let yc=170, prevOff=null, prevEnd=false, prevBelow=false;
+  let yc=CEL?200:170, prevOff=null, prevEnd=false, prevBelow=false;
   page.rows.forEach((row,ri)=>{
     if(row.specialType==='STRUCTURE'){
       const ps=(row.specialTypeData&&row.specialTypeData.parts)||[]; const y0=yc+75+0.69*(row.offsetY||0);
@@ -448,7 +452,7 @@ function build(sc,T,keyLabel,pi){
       if(b.specificEnding){ const ye=(below||!hasR)?yc-62:yc-106; o+=`<path d="M${bx+2} ${ye+9} V${ye} H${bx+bw-2}" stroke="${RED}" stroke-width="1.6" fill="none"/><text class="en" x="${bx+7}" y="${ye-5}">${esc(b.specificEnding)}</text>`; }
     });
   });
-  const H=Math.max(1170,yc+100);
+  const H=CEL?yc+100:Math.max(1170,yc+100);
   return {svg:`<svg class="page" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}">${o}</svg>`,asp:W/H};
 }
 
@@ -456,6 +460,7 @@ function keyItem(){ return (minor?MIN:MAJ)[keyIdx]; }
 function currentShift(){ const k=keyItem(); const m=(k[1]+(minor?3:0))%12; return ((m-baseMajPc)%12+12)%12; }
 
 function fitW(){ const st=$('stage'); return Math.min(st.clientWidth||9999, document.documentElement.clientWidth||9999); }
+let _cel=null; addEventListener('resize',()=>{ const c=celOn(); if(_cel!==null&&c!==_cel){ _cel=c; try{ render(); }catch(e){} } _cel=c; });
 function sizeSvg(){ const w=$('wrap'); w.style.setProperty('--asp',ASP); w.style.setProperty('--z',zoom); updateNav(); }
 
 function fitChords(){
@@ -520,7 +525,7 @@ function renderImg(sc){
 function render(){
   if(kind==='pdf'){ renderPdf(); return; }
   if(!song) return;
-  const sc=song.scores[0]; if(sc.type==='IMG'){ renderImg(sc); return; } const k=keyItem();
+  const sc=song.scores[0]; if(sc.type==='IMG'){ renderImg(sc); return; } document.body.classList.toggle('cel',celOn()); const k=keyItem();
   const T={ls:((itemLA(k).l-refL)%7+7)%7,sh:currentShift(),pref:k[2]}; TG=itemLA(k);
   const kp=tr({l:bkL,a:bkA},T); const nm=LET[kp.l]+sg(kp.a)+(bkMinor?'m':'');
   const r=build(sc,T,nm,pageIdx);
