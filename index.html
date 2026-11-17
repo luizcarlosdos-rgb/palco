@@ -106,7 +106,7 @@ body.solo .edge{display:flex}
 #hsearch input::placeholder{color:#9fb2cc}
 #hlist{flex:1;min-height:0;overflow:auto;scrollbar-width:none}#hlist::-webkit-scrollbar{display:none}
 .hrow{display:flex;align-items:center;gap:16px;min-height:72px;width:100%;padding:0 20px;border:0;border-bottom:1px solid #3a4b5f;background:none;text-align:left;color:inherit;font-family:inherit}
-.hrow:active{background:#2f4156}.drow.sel{background:#2f4156;box-shadow:inset 4px 0 0 #b4cdf6}.psec{padding:16px 20px 6px;font-size:15px;font-weight:700;letter-spacing:.06em;color:#8fa6c4;text-transform:uppercase}.hrow.tocando .t2{color:#6fd08c;font-weight:600}
+.hrow:active{background:#2f4156}.drow.sel{background:#2f4156;box-shadow:inset 4px 0 0 #b4cdf6}.swrap{position:relative;overflow:hidden;border-bottom:1px solid #3a4b5f}.swrap .hrow{position:relative;z-index:1;background:#283747;transition:transform .2s;border-bottom:0;touch-action:pan-y}.swrap.open .hrow{transform:translateX(-96px)}.sdel{position:absolute;right:0;top:0;bottom:0;width:96px;border:0;background:#c0392b;color:#fff;font-size:17px;font-weight:700;font-family:inherit}.psec{padding:16px 20px 6px;font-size:15px;font-weight:700;letter-spacing:.06em;color:#8fa6c4;text-transform:uppercase}.hrow.tocando .t2{color:#6fd08c;font-weight:600}
 .hrow .tx{flex:1;min-width:0}
 .hrow .t1{font-size:22px;color:#e8eef8;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hrow .t2{font-size:15px;color:#9fb2cc;margin-top:3px}
@@ -750,7 +750,7 @@ function libIdx(n){ return LIB.findIndex(x=>x.n.toLowerCase()===String(n).toLowe
 function getShow(id){ return SHOWS.find(s=>s.id===id); }
 function drawShows(){
   $('hlist').innerHTML=SHOWS.length?SHOWS.map(s=>{ const ns=s.items.filter(i=>i.t==='s').length, nb=s.items.filter(i=>i.t==='b').length;
-    return `<button class="hrow" data-sid="${s.id}"><div class="tx"><div class="t1">${esc(s.name)}</div><div class="t2">${ns} ${ns===1?'música':'músicas'}${nb?' · '+nb+(nb===1?' bloco':' blocos'):''}</div></div>${CHEV}</button>`; }).join(''):'<div class="hvazio">Nenhum show ainda.</div>';
+    return `<div class="swrap"><button class="hrow" data-sid="${s.id}"><div class="tx"><div class="t1">${esc(s.name)}</div><div class="t2">${ns} ${ns===1?'música':'músicas'}${nb?' · '+nb+(nb===1?' bloco':' blocos'):''}</div></div>${CHEV}</button><button class="sdel" data-sid="${s.id}" aria-label="Apagar show">Apagar</button></div>`; }).join(''):'<div class="hvazio">Nenhum show ainda.</div>';
 }
 function openShow(id,edit){ showOpen=id; editing=!!edit; drawHome(); $('dlist').scrollTop=0; }
 function drawDet(){
@@ -941,6 +941,18 @@ function itemAu(it,e){ if(it.a==='-') return null; const x=it.a?audById(it.a):nu
   window.palcoDelAudio=id=>{ if(!db) return; try{ db.transaction('audio','readwrite').objectStore('audio').delete(id); }catch(e){} };
   load().then(()=>{ setInterval(save,2500); });
   document.addEventListener('visibilitychange',()=>{ if(document.hidden) save(); });
+})();
+
+/* lista de shows: deslizar para a esquerda mostra Apagar */
+(function(){ const L=$('hlist'); let sx=0,sy=0,row=null,mv=false;
+  const fecha=()=>L.querySelectorAll('.swrap.open').forEach(w=>w.classList.remove('open'));
+  L.addEventListener('pointerdown',e=>{ const w=e.target.closest('.swrap'); if(!w){ return; } row=w; sx=e.clientX; sy=e.clientY; mv=false; });
+  L.addEventListener('pointermove',e=>{ if(!row) return; const dx=e.clientX-sx, dy=e.clientY-sy; if(Math.abs(dx)>14&&Math.abs(dx)>Math.abs(dy)*1.5){ mv=true; if(dx<0){ L.querySelectorAll('.swrap.open').forEach(w=>{ if(w!==row) w.classList.remove('open'); }); row.classList.add('open'); } else row.classList.remove('open'); } });
+  const fim=()=>{ row=null; };
+  L.addEventListener('pointerup',fim); L.addEventListener('pointercancel',fim);
+  L.addEventListener('click',async e=>{ if(mv){ e.stopPropagation(); e.preventDefault(); mv=false; return; }
+    const d=e.target.closest('.sdel'); if(d){ e.stopPropagation(); const sh=getShow(d.dataset.sid); if(!sh) return; const ok=await ask({title:'Apagar "'+sh.name+'"?',msg:'As músicas continuam na biblioteca.',ok:'Apagar',danger:true}); if(ok){ SHOWS.splice(SHOWS.indexOf(sh),1); drawHome(); toast('Show apagado'); } else fecha(); return; }
+    if(L.querySelector('.swrap.open')&&e.target.closest('.hrow[data-sid]')){ e.stopPropagation(); e.preventDefault(); fecha(); } },true);
 })();
 syncHome(); drawHome();
 /* backup leve em arquivo: letras, shows e ligações de áudio (sem os MP3) */
