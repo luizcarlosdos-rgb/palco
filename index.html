@@ -394,7 +394,7 @@ function build(sc,T,keyLabel,pi){
     const n=bars.length; if(!n) return;
     const fx=i=>{ const a=bars[i-1]&&bars[i-1].rightLine&&bars[i-1].rightLine.fixedPos, c=bars[i]&&bars[i].leftLine&&bars[i].leftLine.fixedPos; return a!=null?a:c!=null?c:null; };
     const pp=new Array(n+1).fill(null); pp[0]=0; for(let i=1;i<=n;i++){ const f=fx(i); if(f!=null) pp[i]=f/1000; }
-    if(pp[n]==null) pp[n]=n/Math.max(n,4);
+    if(pp[n]==null) pp[n]=CEL?1:n/Math.max(n,4);
     let lastI=0; for(let i=1;i<=n;i++){ if(pp[i]!=null){ for(let k=lastI+1;k<i;k++) pp[k]=pp[lastI]+(pp[i]-pp[lastI])*(k-lastI)/(i-lastI); lastI=i; } }
     if(AUTOW&&n>1){
       const Wt=(R-L), fk=document.body.classList.contains('pet')?.92:1, e=[], nd=[];
