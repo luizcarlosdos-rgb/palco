@@ -509,7 +509,7 @@ function vpPages(sc){ const st=$('stage'), sw=st.clientWidth||innerWidth, sh=st.
   VPC={k,v:out.length?out:[rows]}; return VPC.v; }
 function nPages(){ if(kind==='pdf') return pdfDoc?pdfDoc.numPages:0; if(!song) return 0; const sc=song.scores[0]; if(celOn()&&sc.type!=='IMG'&&sc.pages) return vpPages(sc).length; return sc.pages.length; }
 function updateNav(){ const s=$('stage'), n=nPages(), h=s.clientHeight*0.92; const tot=Math.max(1,Math.ceil((s.scrollHeight-s.clientHeight-4)/h)+1); const top=s.scrollTop<=6, bot=s.scrollTop+s.clientHeight>=s.scrollHeight-6; const cur=bot?tot:Math.min(tot,Math.round(s.scrollTop/h)+1);
-  $('pg').textContent=n>1?`${pageIdx+1}/${n}`:'';
+  $('pg').textContent=n>1?`${pageIdx+1}/${n}`:''; try{ updFl(); }catch(e){}
   [$('prev'),$('pl')].forEach(b=>b.disabled=pageIdx<=0&&top&&showSib(-1)==null); [$('next'),$('pr')].forEach(b=>b.disabled=pageIdx>=n-1&&bot&&showSib(1)==null); }
 async function renderPdf(){ const p=await pdfDoc.getPage(pageIdx+1); const vp=p.getViewport({scale:2.4}); const c=document.createElement('canvas'); c.width=vp.width; c.height=vp.height; await p.render({canvasContext:c.getContext('2d'),viewport:vp}).promise; ASP=vp.width/vp.height; $('wrap').innerHTML=''; $('wrap').appendChild(c); sizeSvg(); updateNav(); try{ await pdfLinks(p,c); }catch(e){} }
 /* links internos do PDF (índice -> letra e letra -> índice) */
@@ -708,8 +708,9 @@ function setTab(a){ if(window.prvStop) window.prvStop(); aba=a; ['m','s','a'].fo
 function addLib(en){ const i=LIB.findIndex(x=>x.n.toLowerCase()===en.n.toLowerCase()); if(i>=0){ en.au=LIB[i].au; LIB[i]=en; } else LIB.push(en); drawHome(); return en; }
 async function openEntry(en,ctx){ await openEntry0(en); curEntry=en; curShow=ctx||null; loadAu(en); updateNav(); updFl(); }
 /* setas flutuantes no modo só-letra, dentro de um show */
-(function(){ const mk=(id,d,path)=>{ const b=document.createElement('button'); b.id=id; b.className='fl'; b.setAttribute('aria-label',d<0?'Música anterior':'Próxima música'); b.innerHTML='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="'+path+'"/></svg>'; b.onclick=e=>{ e.stopPropagation(); goSib(d,mode==='solo'&&AUTO===2); }; $('app').appendChild(b); }; mk('fl-p',-1,'M15 5l-7 7 7 7'); mk('fl-n',1,'M9 5l7 7-7 7'); })();
-function updFl(){ const lim=document.body.classList.contains('limpo')&&curShow&&$('home').classList.contains('off'); $('fl-p').classList.toggle('on',!!lim&&showSib(-1)!=null); $('fl-n').classList.toggle('on',!!lim&&showSib(1)!=null); }
+(function(){ const mk=(id,d,path)=>{ const b=document.createElement('button'); b.id=id; b.className='fl'; b.setAttribute('aria-label',d<0?'Música anterior':'Próxima música'); b.innerHTML='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="'+path+'"/></svg>'; b.onclick=e=>{ e.stopPropagation(); const n=nPages(); if(d>0&&pageIdx<n-1){ pageIdx++; render(); $('stage').scrollTo(0,0); updFl(); return; } if(d<0&&pageIdx>0){ pageIdx--; render(); $('stage').scrollTo(0,0); updFl(); return; } goSib(d,mode==='solo'&&AUTO===2); }; $('app').appendChild(b); }; mk('fl-p',-1,'M15 5l-7 7 7 7'); mk('fl-n',1,'M9 5l7 7-7 7');
+  const pg=document.createElement('div'); pg.id='flpg'; $('app').appendChild(pg); const st=document.createElement('style'); st.textContent='#flpg{position:absolute;right:12px;top:8px;font-size:15px;color:#8fa3bd;opacity:.85;display:none;z-index:30;pointer-events:none}body.limpo #flpg.on{display:block}'; document.head.appendChild(st); })();
+function updFl(){ const lim=document.body.classList.contains('limpo')&&curShow&&$('home').classList.contains('off'); const n=nPages(); $('fl-p').classList.toggle('on',!!lim&&(pageIdx>0||showSib(-1)!=null)); $('fl-n').classList.toggle('on',!!lim&&(pageIdx<n-1||showSib(1)!=null)); const f=$('flpg'); if(f){ f.textContent=n>1?(pageIdx+1)+'/'+n:''; f.classList.toggle('on',n>1); } }
 
 /* música sem letra: escolher uma letra já guardada no app */
 let _lov=null;
