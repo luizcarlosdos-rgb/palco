@@ -698,7 +698,7 @@ function updFl(){ const lim=document.body.classList.contains('limpo')&&curShow&&
 
 /* música sem letra: escolher uma letra já guardada no app */
 let _lov=null;
-function letraDoApp(en){
+function letraDoApp(en,stay){
   if(!_lov){ _lov=document.createElement('div'); _lov.id='lov'; _lov.innerHTML='<div id="lbx"><h3>Escolher letra do app</h3><input id="lq" placeholder="Buscar música" autocomplete="off"><div id="llist"></div><div class="pb"><button id="lcn">Cancelar</button></div></div>'; $('app').appendChild(_lov);
     const st=document.createElement('style'); st.textContent='#lov{position:absolute;inset:0;z-index:60;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center}#lov.on{display:flex}#lbx{width:calc(100% - 32px);height:80%;display:flex;flex-direction:column;background:#243445;border:1px solid #4a5d74;border-radius:16px;padding:18px}#lbx h3{margin:0 0 12px;font-size:20px;color:#e8eef8}#lq{height:48px;border-radius:12px;border:1px solid #4a5d74;background:#1d2a38;color:#e8eef8;font-size:18px;padding:0 14px;margin-bottom:10px;font-family:inherit;-webkit-user-select:text;user-select:text}#llist{flex:1;min-height:0;overflow:auto}#llist button{display:block;width:100%;text-align:left;min-height:56px;padding:0 14px;margin-bottom:8px;border-radius:12px;border:1px solid #4a5d74;background:none;color:#e8eef8;font-size:19px;font-weight:600;font-family:inherit}#lbx .pb{display:flex;justify-content:flex-end;margin-top:8px}#lbx .pb button{height:48px;padding:0 20px;border-radius:12px;border:1px solid #4a5d74;background:none;color:#e8eef8;font-size:17px;font-weight:600;font-family:inherit}'; document.head.appendChild(st);
     $('lcn').onclick=()=>_lov.classList.remove('on'); }
@@ -707,7 +707,7 @@ function letraDoApp(en){
   $('lq').value=''; $('lq').oninput=draw; draw(); _lov.classList.add('on');
   $('llist').onclick=async e=>{ const b=e.target.closest('button'); if(!b) return; const src=LIB.find(x=>x.n===b.dataset.n); if(!src) return;
     en.k=src.k; en.o=src.o; en.p=src.p; en._saved=false; _lov.classList.remove('on'); try{ window.palcoSave&&await window.palcoSave(); }catch(_){}
-    const c=curShow?{id:curShow.id,pos:curShow.pos}:undefined; await openEntry(en,c); toast('Letra colocada em '+en.n); };
+    if(stay){ drawDet(); toast('Letra colocada em '+en.n); return; } const c=curShow?{id:curShow.id,pos:curShow.pos}:undefined; await openEntry(en,c); toast('Letra colocada em '+en.n); };
 }
 async function openEntry0(en){
   if(en.k==='blank'){ document.body.classList.remove('pdf'); kind='blank'; song=null; pdfDoc=null; pageIdx=0; $('ttl').textContent=en.n; $('wrap').innerHTML='<div class="semletra"><b>'+esc(en.n)+'</b><span>Esta música ainda não tem letra.</span><button id="blapp" class="btn" style="padding:14px 22px;font-size:20px;border-radius:12px;border:1px solid #b4cdf6;background:#1f3556;color:#e8eef8;margin-bottom:10px">Letra do app (sem internet)</button><button id="blimp" class="btn" style="padding:14px 22px;font-size:20px;border-radius:12px;border:1px solid #4c6a94;background:#1f3556;color:#e8eef8">Do aparelho ou do Drive</button></div>'; $('blapp').onclick=()=>letraDoApp(en); $('blimp').onclick=()=>{ window.impFor=en.n; $('file').accept='.lset,.pdf,.json,application/pdf,application/json,application/octet-stream'; $('file').multiple=false; $('file').click(); }; hideHome(); $('stage').scrollTo(0,0); return; }
@@ -758,8 +758,8 @@ function drawDet(){
     if(it.t==='b') return `<div class="drow blk"><div class="bn" ${editing?`data-a="rn" data-i="${i}"`:''}>${esc(it.name)}</div>${ctl}</div>`;
     const j=libIdx(it.n), e=j>=0?LIB[j]:null; k++;
     const sc=e&&e.k==='lset'?((e.o.scores||[])[0]||{}):{};
-    const parts=[sc.author, e?(mode==='solo'?(itemAu(it,e)?'♪ '+itemAu(it,e).name:'Sem áudio'):null):'não está na biblioteca'].filter(Boolean); const gone=mode==='solo'&&e&&!itemAu(it,e)&&it.a&&it.a!=='-'; let t2=esc(parts.join(' · ')); if(gone) t2=t2.replace('Sem áudio','<span class="gone">Sem áudio</span>');
-    return `<div class="drow${e?'':' mis'}"><button class="dmain" data-a="open" data-i="${i}"><span class="dn">${k}</span><span class="tx"><span class="t1">${esc(it.n)}</span><span class="t2">${t2}</span></span></button>${editing&&mode==='solo'&&e?`<button class="dau" data-a="au" data-i="${i}">MP3</button>`:''}${ctl}</div>`;
+    const parts=[sc.author, e&&e.k==='blank'?'Sem letra':null, e?(mode==='solo'?(itemAu(it,e)?'♪ '+itemAu(it,e).name:'Sem áudio'):null):'não está na biblioteca'].filter(Boolean); const gone=mode==='solo'&&e&&!itemAu(it,e)&&it.a&&it.a!=='-'; let t2=esc(parts.join(' · ')); if(gone) t2=t2.replace('Sem áudio','<span class="gone">Sem áudio</span>');
+    return `<div class="drow${e?'':' mis'}"><button class="dmain" data-a="open" data-i="${i}"><span class="dn">${k}</span><span class="tx"><span class="t1">${esc(it.n)}</span><span class="t2">${t2}</span></span></button>${editing&&e&&e.k==='blank'?`<button class="dau" data-a="lt" data-i="${i}">Letra</button>`:''}${editing&&mode==='solo'&&e?`<button class="dau" data-a="au" data-i="${i}">MP3</button>`:''}${ctl}</div>`;
   }).join('');
   if(!h) h='<div class="hvazio">'+(editing?'Show vazio. Adicione músicas abaixo.':'Show vazio. Toque em Editar.')+'</div>';
   if(editing) h+='<div id="dtools">'+(mode==='solo'?'<button class="pri" data-a="addmp3">Adicionar MP3</button>':'')+'<button data-a="addm">＋ Letra</button><button data-a="addb">＋ Bloco</button><button data-a="ren">Renomear</button><button data-a="dup">Duplicar</button><button class="red" data-a="del">Apagar show</button></div>';
@@ -782,6 +782,7 @@ $('dlist').onclick=async e=>{
   else if(a==='rm'){ s.items.splice(i,1); }
   else if(a==='rn'){ const v=await ask({title:'Nome do bloco',value:s.items[i].name,ok:'Salvar'}); if(v) s.items[i].name=v; }
   else if(a==='au'){ openApk(i); return; }
+  else if(a==='lt'){ const j=libIdx(getShow(showOpen).items[i].n); if(j>=0) letraDoApp(LIB[j],true); return; }
   else if(a==='addmp3'){ openPick(true); return; }
   else if(a==='paste'){ pasteList(); return; }
   else if(a==='addm'){ openPick(false); return; }
