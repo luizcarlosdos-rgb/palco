@@ -35,7 +35,7 @@ html,body{margin:0;height:100%;background:#0e0f11;color:#e8eaed;font-family:syst
 .ib[disabled]{opacity:.3}
 #stage{flex:1;min-height:0;min-width:0;overflow:auto;scrollbar-width:none;display:flex;container-type:size;background:#283747;-webkit-overflow-scrolling:touch}body.claro #stage{background:#d9dde6}
 #wrap{margin:auto;flex:none;width:calc(min(100cqw,100cqh*var(--asp,.7071))*var(--z,1))}
-body.cel:not(.pdf) #wrap{width:calc(100cqw*var(--z,1));margin:0 auto}#wrap svg{display:block;width:100%;height:auto;background:#283747;color:#b4cdf6}#wrap canvas{display:block;width:100%;height:auto;background:#fff}body.claro #wrap svg{background:#fff;color:#111}
+#wrap svg{display:block;width:100%;height:auto;background:#283747;color:#b4cdf6}#wrap canvas{display:block;width:100%;height:auto;background:#fff}body.claro #wrap svg{background:#fff;color:#111}
 body.solo #bot{display:none}body.banda #abot,body.banda .edge,body.banda #tomTop{display:none}
 body.pdf #tom,body.pdf #tomTop{display:none!important}
 #abot{flex:none;background:#16181c;border-top:1px solid #262a30;padding:8px 14px 12px;position:relative}
@@ -356,13 +356,14 @@ function rhythm(syms,xf,ry){
   return o;
 }
 
+let CELM=0;
 function celOn(){ return kind!=='pdf'&&innerWidth<600; }
 function splitRows(rows){ const out=[]; rows.forEach(row=>{ const bars=row.bars||[]; if(row.specialType==='STRUCTURE'||bars.length<=2){ out.push(row); return; }
   const cl=b=>{ const c={...b}; ['leftLine','rightLine'].forEach(k=>{ if(c[k]&&c[k].fixedPos!=null){ c[k]={...c[k]}; delete c[k].fixedPos; } }); return c; };
   for(let i=0;i<bars.length;i+=2) out.push(i?{...row,bars:bars.slice(i,i+2).map(cl),offsetY:0}:{...row,bars:bars.slice(0,2).map(cl)}); }); return out; }
 function chordLaneId(sc){ const ls=((sc.layout||{}).lanes||[]).filter(l=>l.type==='CHORDS'); const a=ls.find(l=>l.showBars)||ls.find(l=>l.id==='mc')||ls[ls.length-1]; return a?a.id:'mc'; }
 function build(sc,T,keyLabel,pi){
-  const CEL=celOn(), W=CEL?440:827, L=CEL?46:60, R=W-37;
+  const PH=celOn(), CEL=PH&&CELM===1, W=CEL?440:827, L=CEL?46:60, R=W-37;
   const page=CEL?{...sc.pages[pi],rows:splitRows(sc.pages[pi].rows)}:sc.pages[pi]; const lanes=(sc.layout&&sc.layout.lanes)||[];
   const rl=lanes.find(l=>l.type==='RHYTHMIC')||{}, rid=rl.id, cid=chordLaneId(sc);
   const cl=lanes.find(l=>l.id===cid)||{}, iR=lanes.findIndex(l=>l.type==='RHYTHMIC'), iC=lanes.findIndex(l=>l.id===cid);
@@ -452,7 +453,7 @@ function build(sc,T,keyLabel,pi){
       if(b.specificEnding){ const ye=(below||!hasR)?yc-62:yc-106; o+=`<path d="M${bx+2} ${ye+9} V${ye} H${bx+bw-2}" stroke="${RED}" stroke-width="1.6" fill="none"/><text class="en" x="${bx+7}" y="${ye-5}">${esc(b.specificEnding)}</text>`; }
     });
   });
-  const H=CEL?yc+100:Math.max(1170,yc+100);
+  const H=PH?yc+60:Math.max(1170,yc+100);
   return {svg:`<svg class="page" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}">${o}</svg>`,asp:W/H};
 }
 
@@ -528,7 +529,7 @@ function render(){
   const sc=song.scores[0]; if(sc.type==='IMG'){ renderImg(sc); return; } document.body.classList.toggle('cel',celOn()); const k=keyItem();
   const T={ls:((itemLA(k).l-refL)%7+7)%7,sh:currentShift(),pref:k[2]}; TG=itemLA(k);
   const kp=tr({l:bkL,a:bkA},T); const nm=LET[kp.l]+sg(kp.a)+(bkMinor?'m':'');
-  const r=build(sc,T,nm,pageIdx);
+  let r; if(celOn()){ const st=$('stage'), sw=st.clientWidth||innerWidth, sh=st.clientHeight||innerHeight; const sc_=(x,wu)=>Math.min(sw/wu, sh/(wu/x.asp)); CELM=2; const a=build(sc,T,nm,pageIdx); CELM=1; const b=build(sc,T,nm,pageIdx); if(sc_(a,827)>=sc_(b,440)){ CELM=2; r=a; } else { CELM=1; r=b; } } else { CELM=0; r=build(sc,T,nm,pageIdx); }
   const dk=!document.body.classList.contains('claro'); ASP=r.asp; $('wrap').innerHTML=r.svg.replace(/"#(111|222)"/g,'"currentColor"').replace(/fill="#fff" stroke="currentColor"/g,'fill="none" stroke="currentColor"').replace(/#d6291f/g,dk?'#ff6b6b':'#d6291f'); sizeSvg(); try{fitChords()}catch(e){} try{avoid()}catch(e){}
   $('tomv').textContent=k[0]; $('tomv2').textContent=k[0];
   updateNav();
