@@ -706,8 +706,12 @@ function letraDoApp(en,stay){
     $('llist').innerHTML=ls.length?ls.map(x=>'<button data-n="'+esc(x.n)+'">'+esc(x.n)+'</button>').join(''):'<div class="hvazio">Nenhuma letra no app. Use "Do aparelho ou do Drive".</div>'; };
   $('lq').value=''; $('lq').oninput=draw; draw(); _lov.classList.add('on');
   $('llist').onclick=async e=>{ const b=e.target.closest('button'); if(!b) return; const src=LIB.find(x=>x.n===b.dataset.n); if(!src) return;
-    en.k=src.k; en.o=src.o; en.p=src.p; en._saved=false; _lov.classList.remove('on'); try{ window.palcoSave&&await window.palcoSave(); }catch(_){}
-    if(stay){ drawDet(); toast('Letra colocada em '+en.n); return; } const c=curShow?{id:curShow.id,pos:curShow.pos}:undefined; await openEntry(en,c); toast('Letra colocada em '+en.n); };
+    const oldN=en.n.toLowerCase(), au=(typeof itemAu==='function'&&mode==='solo')?itemAu({a:null},en):null;
+    const all=[SHOWS].concat(Object.values(ST||{}).map(z=>z&&z.shows).filter(Boolean));
+    for(const arr of all) for(const sh of arr) for(const it of sh.items){ if(it.t==='s'&&it.n.toLowerCase()===oldN){ if(!it.a&&en.au&&en.au._id) it.a=en.au._id; if(!it.a&&au&&au._id) it.a=au._id; it.n=src.n; } }
+    const ix=LIB.indexOf(en); if(ix>=0) LIB.splice(ix,1); try{ window.palcoDelLib&&window.palcoDelLib(en.n); }catch(_){}
+    _lov.classList.remove('on'); try{ window.palcoSave&&await window.palcoSave(); }catch(_){}
+    if(stay){ drawDet(); toast('Letra colocada em '+src.n); return; } const c=curShow?{id:curShow.id,pos:curShow.pos}:undefined; await openEntry(src,c); toast('Letra colocada em '+src.n); };
 }
 async function openEntry0(en){
   if(en.k==='blank'){ document.body.classList.remove('pdf'); kind='blank'; song=null; pdfDoc=null; pageIdx=0; $('ttl').textContent=en.n; $('wrap').innerHTML='<div class="semletra"><b>'+esc(en.n)+'</b><span>Esta música ainda não tem letra.</span><button id="blapp" class="btn" style="padding:14px 22px;font-size:20px;border-radius:12px;border:1px solid #b4cdf6;background:#1f3556;color:#e8eef8;margin-bottom:10px">Letra do app (sem internet)</button><button id="blimp" class="btn" style="padding:14px 22px;font-size:20px;border-radius:12px;border:1px solid #4c6a94;background:#1f3556;color:#e8eef8">Do aparelho ou do Drive</button></div>'; $('blapp').onclick=()=>letraDoApp(en); $('blimp').onclick=()=>{ window.impFor=en.n; $('file').accept='.lset,.pdf,.json,application/pdf,application/json,application/octet-stream'; $('file').multiple=false; $('file').click(); }; hideHome(); $('stage').scrollTo(0,0); return; }
@@ -933,6 +937,7 @@ function itemAu(it,e){ if(it.a==='-') return null; const x=it.a?audById(it.a):nu
   setInterval(()=>{ try{ save(); }catch(e){} },1500);
   document.addEventListener('visibilitychange',()=>{ try{ save(); }catch(e){} });
   window.addEventListener('pagehide',()=>{ try{ save(); }catch(e){} });
+  window.palcoDelLib=n=>{ if(!db) return; const k=String(n).toLowerCase(); try{ const t=db.transaction(['lib','meta'],'readwrite'); t.objectStore('lib').delete(k); t.objectStore('meta').delete(k); }catch(e){} };
   window.palcoDelAudio=id=>{ if(!db) return; try{ db.transaction('audio','readwrite').objectStore('audio').delete(id); }catch(e){} };
   load().then(()=>{ setInterval(save,2500); });
   document.addEventListener('visibilitychange',()=>{ if(document.hidden) save(); });
