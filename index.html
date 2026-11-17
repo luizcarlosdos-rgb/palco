@@ -697,6 +697,8 @@ let lastTap=0;
 st.addEventListener('touchend',e=>{ if(e.touches.length||e.changedTouches.length!==1) return; const n=Date.now(); if(n-lastTap<300){ toggleLimpo(); lastTap=0; } else lastTap=n; });
 let tgL=0; function toggleLimpo(){ const n=Date.now(); if(n-tgL<500) return; tgL=n; document.body.classList.toggle('limpo'); updFl(); requestAnimationFrame(sizeSvg); }
 st.addEventListener('dblclick',()=>toggleLimpo());
+document.addEventListener('touchmove',e=>{ if(e.touches.length>1&&!(e.target&&e.target.closest&&e.target.closest('#stage'))) e.preventDefault(); },{passive:false});
+document.addEventListener('gesturestart',e=>{ if(!(e.target&&e.target.closest&&e.target.closest('#stage'))) e.preventDefault(); });
 st.addEventListener('wheel',e=>{ if(e.ctrlKey){ e.preventDefault(); const rc=st.getBoundingClientRect(); setZoom(zoom*(e.deltaY<0?1.1:0.9),e.clientX-rc.left,e.clientY-rc.top); } },{passive:false});
 window.addEventListener('resize',sizeSvg);
 try{ new ResizeObserver(()=>sizeSvg()).observe($('stage')); }catch(e){}
