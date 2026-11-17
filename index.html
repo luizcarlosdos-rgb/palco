@@ -106,7 +106,7 @@ body.solo .edge{display:flex}
 #hsearch input::placeholder{color:#9fb2cc}
 #hlist{flex:1;min-height:0;overflow:auto;scrollbar-width:none}#hlist::-webkit-scrollbar{display:none}
 .hrow{display:flex;align-items:center;gap:16px;min-height:72px;width:100%;padding:0 20px;border:0;border-bottom:1px solid #3a4b5f;background:none;text-align:left;color:inherit;font-family:inherit}
-.hrow:active{background:#2f4156}.hrow.tocando .t2{color:#6fd08c;font-weight:600}
+.hrow:active{background:#2f4156}.psec{padding:16px 20px 6px;font-size:15px;font-weight:700;letter-spacing:.06em;color:#8fa6c4;text-transform:uppercase}.hrow.tocando .t2{color:#6fd08c;font-weight:600}
 .hrow .tx{flex:1;min-width:0}
 .hrow .t1{font-size:22px;color:#e8eef8;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hrow .t2{font-size:15px;color:#9fb2cc;margin-top:3px}
@@ -790,11 +790,14 @@ function drawPick(){
   const s=getShow(showOpen); if(!s){ closePick(); return; } const q=$('pq').value.trim().toLowerCase(); const have=new Set(s.items.filter(i=>i.t==='s').map(i=>i.n.toLowerCase()));
   const ls=LIB.filter(e=>!q||e.n.toLowerCase().includes(q)).sort((a,b)=>a.n.localeCompare(b.n,'pt',{sensitivity:'base'}));
   $('plist').innerHTML=ls.length?ls.map(e=>{ const k=e.n.toLowerCase(), inn=have.has(k), on=pickSel.has(k); return `<button class="prow${on?' on':''}" data-k="${esc(k)}"><span class="ck">${on?'✓':''}</span><span class="tx"><span class="t1">${esc(e.n)}</span>${inn?'<span class="t2">já está neste show</span>':''}</span></button>`; }).join(''):'<div class="hvazio">Biblioteca vazia. Use Importar.</div>';
+  if(mode==='solo'&&typeof AUD!=='undefined'){ const nm=x=>{ const p=x.name.split(/\s+-\s+/); return (p.length>1?p.slice(1).join(' - '):x.name).trim(); };
+    const as=AUD.filter(x=>!q||x.name.toLowerCase().includes(q)).sort((a,b)=>a.name.localeCompare(b.name,'pt',{sensitivity:'base'}));
+    if(as.length) $('plist').insertAdjacentHTML('beforeend','<div class="psec">Áudios guardados</div>'+as.map(x=>{ const k='aud:'+x._id, on=pickSel.has(k), inn=have.has(nm(x).toLowerCase()); return `<button class="prow${on?' on':''}" data-k="${esc(k)}"><span class="ck">${on?'✓':''}</span><span class="tx"><span class="t1">${esc(x.name)}</span>${inn?'<span class="t2">já está neste show</span>':''}</span></button>`; }).join('')); }
   $('pok').textContent=pickSel.size?'Adicionar ('+pickSel.size+')':'Adicionar'; $('pok').disabled=!pickSel.size;
 }
 $('plist').onclick=e=>{ const b=e.target.closest('.prow'); if(!b) return; const k=b.dataset.k; if(pickSel.has(k)) pickSel.delete(k); else pickSel.add(k); drawPick(); };
 $('pq').oninput=drawPick; $('pcan').onclick=closePick; $('pimp').onclick=()=>{ $('file').accept='.lset,.pdf,.json,application/pdf,application/json,application/octet-stream'; $('file').multiple=true; $('file').click(); };
-$('pok').onclick=()=>{ const s=getShow(showOpen); if(!s) return closePick(); const have=new Set(s.items.filter(i=>i.t==='s').map(i=>i.n.toLowerCase())); pickSel.forEach(k=>{ const j=libIdx(k); if(j>=0) s.items.push({t:'s',n:LIB[j].n}); }); closePick(); drawDet(); };
+$('pok').onclick=()=>{ const s=getShow(showOpen); if(!s) return closePick(); const have=new Set(s.items.filter(i=>i.t==='s').map(i=>i.n.toLowerCase())); pickSel.forEach(k=>{ if(k.indexOf('aud:')===0){ const x=AUD.find(z=>z._id===k.slice(4)); if(!x) return; const p=x.name.split(/\s+-\s+/); const title=(p.length>1?p.slice(1).join(' - '):x.name).trim(); let j=libIdx(title.toLowerCase()); if(j<0){ LIB.push({n:title,k:'blank',o:null,p:1}); j=LIB.length-1; } s.items.push({t:'s',n:LIB[j].n,a:x._id}); return; } const j=libIdx(k); if(j>=0) s.items.push({t:'s',n:LIB[j].n}); }); try{ window.palcoSave&&window.palcoSave(); }catch(_){} closePick(); drawDet(); };
 async function afterImp(en,fn){ if(pickOpen){ pickSel.add(en.n.toLowerCase()); drawPick(); toast('Importado: '+fn); } else { await openEntry(en); toast('Aberto: '+fn); } }
 /* Solo: biblioteca de áudios, adicionar MP3, escolher áudio do show, colar lista */
 const AUD=[]; const PEND={};
