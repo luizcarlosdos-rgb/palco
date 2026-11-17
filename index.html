@@ -787,12 +787,12 @@ function closePick(){ pickOpen=false; $('pick').classList.remove('on'); }
 function drawPick(){
   const s=getShow(showOpen); if(!s){ closePick(); return; } const q=$('pq').value.trim().toLowerCase(); const have=new Set(s.items.filter(i=>i.t==='s').map(i=>i.n.toLowerCase()));
   const ls=LIB.filter(e=>!q||e.n.toLowerCase().includes(q)).sort((a,b)=>a.n.localeCompare(b.n,'pt',{sensitivity:'base'}));
-  $('plist').innerHTML=ls.length?ls.map(e=>{ const k=e.n.toLowerCase(), inn=have.has(k), on=pickSel.has(k); return `<button class="prow${on?' on':''}${inn?' inn':''}" data-k="${esc(k)}" ${inn?'disabled':''}><span class="ck">${on||inn?'✓':''}</span><span class="tx"><span class="t1">${esc(e.n)}</span>${inn?'<span class="t2">já está no show</span>':''}</span></button>`; }).join(''):'<div class="hvazio">Biblioteca vazia. Use Importar.</div>';
+  $('plist').innerHTML=ls.length?ls.map(e=>{ const k=e.n.toLowerCase(), inn=have.has(k), on=pickSel.has(k); return `<button class="prow${on?' on':''}" data-k="${esc(k)}"><span class="ck">${on?'✓':''}</span><span class="tx"><span class="t1">${esc(e.n)}</span>${inn?'<span class="t2">já está neste show</span>':''}</span></button>`; }).join(''):'<div class="hvazio">Biblioteca vazia. Use Importar.</div>';
   $('pok').textContent=pickSel.size?'Adicionar ('+pickSel.size+')':'Adicionar'; $('pok').disabled=!pickSel.size;
 }
-$('plist').onclick=e=>{ const b=e.target.closest('.prow'); if(!b||b.disabled) return; const k=b.dataset.k; if(pickSel.has(k)) pickSel.delete(k); else pickSel.add(k); drawPick(); };
+$('plist').onclick=e=>{ const b=e.target.closest('.prow'); if(!b) return; const k=b.dataset.k; if(pickSel.has(k)) pickSel.delete(k); else pickSel.add(k); drawPick(); };
 $('pq').oninput=drawPick; $('pcan').onclick=closePick; $('pimp').onclick=()=>{ $('file').accept='.lset,.pdf,.json,application/pdf,application/json,application/octet-stream'; $('file').multiple=true; $('file').click(); };
-$('pok').onclick=()=>{ const s=getShow(showOpen); if(!s) return closePick(); const have=new Set(s.items.filter(i=>i.t==='s').map(i=>i.n.toLowerCase())); pickSel.forEach(k=>{ const j=libIdx(k); if(j>=0&&!have.has(k)) s.items.push({t:'s',n:LIB[j].n}); }); closePick(); drawDet(); };
+$('pok').onclick=()=>{ const s=getShow(showOpen); if(!s) return closePick(); const have=new Set(s.items.filter(i=>i.t==='s').map(i=>i.n.toLowerCase())); pickSel.forEach(k=>{ const j=libIdx(k); if(j>=0) s.items.push({t:'s',n:LIB[j].n}); }); closePick(); drawDet(); };
 async function afterImp(en,fn){ if(pickOpen){ pickSel.add(en.n.toLowerCase()); drawPick(); toast('Importado: '+fn); } else { await openEntry(en); toast('Aberto: '+fn); } }
 /* Solo: biblioteca de áudios, adicionar MP3, escolher áudio do show, colar lista */
 const AUD=[]; const PEND={};
