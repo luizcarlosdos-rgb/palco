@@ -644,7 +644,7 @@ function drawMedia(){
   else L.innerHTML=media.map((m,i)=>`<button data-i="${i}" class="${i===cur?'cur':''}">${esc(m.name)}</button>`).join('');
   $('mchip').textContent=cur>=0?media[cur].name:'Sem mídia'; $('mchip').classList.toggle('empty',cur<0);
 }
-function pick(i){ cur=i; au.src=media[i].url; au.load(); $('seek').value=0; $('t0').textContent='00:00'; $('t1').textContent='00:00'; drawMedia(); }
+function pick(i){ cur=i; au.src=media[i].url; au.load(); $('seek').value=0; $('t0').textContent='00:00'; $('t1').textContent='00:00'; drawMedia(); ppState(); }
 $('mchip').onclick=e=>{ e.stopPropagation(); const L=$('mlist'); drawMedia(); L.style.display=L.style.display==='block'?'none':'block'; };
 $('mlist').onclick=e=>{ e.stopPropagation(); const b=e.target.closest('button'); if(!b) return; if(b.dataset.add){ if(curShow&&mode==='solo'&&window.addMp3){ window.addMp3('cur'); } else { auTarget=null; $('afile').click(); } } else if(b.dataset.p!==undefined){ const s=getShow(curShow.id); const e=LIB[libIdx(s.items[+b.dataset.p].n)]; if(e) openEntry(e,{id:s.id,pos:+b.dataset.p}); } else { pick(+b.dataset.i); if(curEntry) curEntry.au=media[+b.dataset.i]; } $('mlist').style.display='none'; };
 document.addEventListener('click',()=>{ $('mlist').style.display='none'; });
@@ -657,7 +657,7 @@ $('a-back').onclick=()=>{ if(curShow&&(cur<0||au.currentTime<3)&&showSib(-1)!=nu
 $('a-next').onclick=()=>{ if(curShow){ if(showSib(1)!=null) goSib(1,AUTO===2); else toast('Esta é a última música do show.'); return; } if(cur>=0&&cur<media.length-1){ pick(cur+1); au.play().catch(()=>{}); } else toast('Não há próxima música na lista.'); };
 
 $('seek').oninput=()=>{ if(au.duration) au.currentTime=au.duration*$('seek').value/1000; };
-au.addEventListener('play',ppState); au.addEventListener('pause',ppState);
+au.addEventListener('play',ppState); au.addEventListener('pause',ppState); au.addEventListener('emptied',ppState); au.addEventListener('loadstart',ppState);
 au.addEventListener('ended',()=>{ ppState(); if(curShow){ if(AUTO&&showSib(1)!=null) goSib(1,AUTO===2); return; } if(cur<media.length-1){ pick(cur+1); au.play().catch(()=>{}); } });
 au.addEventListener('loadedmetadata',()=>{ $('t1').textContent=mm(au.duration); });
 au.addEventListener('timeupdate',()=>{ $('t0').textContent=mm(au.currentTime); if(au.duration) $('seek').value=au.currentTime/au.duration*1000; });
