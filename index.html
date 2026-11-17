@@ -110,7 +110,7 @@ body.solo .edge{display:flex}
 .hrow .tx{flex:1;min-width:0}
 .hrow .t1{font-size:22px;color:#e8eef8;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hrow .t2{font-size:15px;color:#9fb2cc;margin-top:3px}
-.gone{color:#ff7a7a;font-weight:700}.adel{flex:none;height:44px;padding:0 16px;border-radius:12px;border:1px solid #4a5d74;background:none;color:#e8eef8;font-size:16px;font-weight:600;font-family:inherit}
+.gone{color:#ff7a7a;font-weight:700}.aadd{flex:none;height:44px;padding:0 16px;border-radius:12px;border:1px solid #b4cdf6;background:none;color:#b4cdf6;font-size:16px;font-weight:600;font-family:inherit}.adel{flex:none;height:44px;padding:0 16px;border-radius:12px;border:1px solid #4a5d74;background:none;color:#e8eef8;font-size:16px;font-weight:600;font-family:inherit}
 .hvazio{padding:40px 20px;text-align:center;color:#9fb2cc;font-size:18px}
 #hbot{flex:none;padding:14px 20px 20px;background:#1f2b38;display:none;gap:12px;align-items:center}
 #home.det #hbot{display:flex}
@@ -824,15 +824,27 @@ function itemAu(it,e){ if(it.a==='-') return null; const x=it.a?audById(it.a):nu
       if(s) for(const it of its){ const p=it.name.split(/\s+-\s+/); const title=(p.length>1?p.slice(1).join(' - '):it.name).trim(); const i=findLib(title); let en; if(i>=0) en=LIB[i]; else { en={n:title,k:'blank',o:null,p:1}; LIB.push(en); nv++; } const x=inShow(s,en.n); if(x) x.a=it._id; else s.items.push({t:'s',n:en.n,a:it._id}); }
       drawHome(); toast(its.length+(its.length>1?' MP3 adicionados':' MP3 adicionado')+(nv?' ('+nv+' sem letra)':'')); return; }
     drawHome(); toast(its.length+(its.length>1?' MP3 guardados':' MP3 guardado')); };
+
+  /* aba Áudios: ＋ Show */
+  const sov=document.createElement('div'); sov.id='sov'; sov.innerHTML='<div id="sbx"><h3>Adicionar a qual show?</h3><div id="slist"></div><div class="pb"><button id="scn">Cancelar</button></div></div>'; $('app').appendChild(sov);
+  const sst=document.createElement('style'); sst.textContent='#sov{position:absolute;inset:0;z-index:60;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center}#sov.on{display:flex}#sbx{width:calc(100% - 48px);max-height:80%;display:flex;flex-direction:column;background:#243445;border:1px solid #4a5d74;border-radius:16px;padding:18px}#sbx h3{margin:0 0 12px;font-size:20px;color:#e8eef8}#slist{overflow:auto;flex:1;min-height:0}#slist button{display:block;width:100%;text-align:left;min-height:56px;padding:0 14px;margin-bottom:8px;border-radius:12px;border:1px solid #4a5d74;background:none;color:#e8eef8;font-size:19px;font-weight:600;font-family:inherit}#slist button.novo{border-color:#b4cdf6;color:#b4cdf6}#sbx .pb{display:flex;justify-content:flex-end;margin-top:8px}#sbx .pb button{height:48px;padding:0 20px;border-radius:12px;border:1px solid #4a5d74;background:none;color:#e8eef8;font-size:17px;font-weight:600;font-family:inherit}'; document.head.appendChild(sst);
+  let sAud=null;
+  const addAudToShow=(s,x)=>{ const p=x.name.split(/\s+-\s+/); const title=(p.length>1?p.slice(1).join(' - '):x.name).trim(); let j=libIdx(title); if(j<0){ LIB.push({n:title,k:'blank',o:null,p:1}); j=LIB.length-1; } const ex=s.items.find(i=>i.t==='s'&&i.n.toLowerCase()===LIB[j].n.toLowerCase()); if(ex) ex.a=x._id; else s.items.push({t:'s',n:LIB[j].n,a:x._id}); try{ window.palcoSave&&window.palcoSave(); }catch(_){} };
+  $('hlist').addEventListener('click',e=>{ const b=e.target.closest('.aadd'); if(!b) return; e.stopPropagation(); sAud=audById(b.dataset.id); if(!sAud) return; $('slist').innerHTML='<button class="novo" data-s="new">＋ Novo show</button>'+SHOWS.map(s=>`<button data-s="${s.id}">${esc(s.name)}</button>`).join(''); sov.classList.add('on'); },true);
+  $('scn').onclick=()=>sov.classList.remove('on');
+  $('slist').onclick=async e=>{ const b=e.target.closest('button'); if(!b||!sAud) return; let s;
+    if(b.dataset.s==='new'){ sov.classList.remove('on'); const v=await ask({title:'Novo show',value:'',ok:'Criar'}); if(!v) return; s={id:uid(),name:v,items:[]}; SHOWS.push(s); }
+    else s=getShow(b.dataset.s); if(!s) return;
+    addAudToShow(s,sAud); sov.classList.remove('on'); drawHome(); toast('Adicionado a "'+s.name+'"'); };
   /* aba Áudios */
   const prv={id:null,on:false,a:new Audio()}; prv.a.onended=()=>{ prv.on=false; prv.id=null; if(aba==='a') drawAud(); };
   window.prvStop=()=>{ try{ prv.a.pause(); }catch(_){} if(prv.id){ prv.on=false; prv.id=null; } };
-  $('hlist').addEventListener('click',e=>{ if(e.target.closest('.adel')) return; const r=e.target.closest('.hrow[data-aid]'); if(!r) return; const x=audById(r.dataset.aid); if(!x) return;
+  $('hlist').addEventListener('click',e=>{ if(e.target.closest('.adel,.aadd')) return; const r=e.target.closest('.hrow[data-aid]'); if(!r) return; const x=audById(r.dataset.aid); if(!x) return;
     if(prv.id===x._id){ if(prv.on){ prv.a.pause(); prv.on=false; } else { prv.a.play().catch(()=>{}); prv.on=true; } }
     else { try{ au.pause(); }catch(_){} prv.a.src=x.url; prv.id=x._id; prv.a.play().then(()=>{},()=>{ toast('Não consegui tocar esse áudio.'); prv.id=null; prv.on=false; drawAud(); }); prv.on=true; }
     drawAud(); });
   window.drawAud=()=>{ const q=$('hq').value.trim().toLowerCase(); const ls=AUD.filter(x=>!q||x.name.toLowerCase().includes(q)).sort((a,b)=>a.name.localeCompare(b.name,'pt',{sensitivity:'base'}));
-    $('hlist').innerHTML=ls.length?ls.map(x=>`<div class="hrow${prv.id===x._id?' tocando':''}" data-aid="${x._id}"><div class="tx"><div class="t1">${esc(x.name)}</div><div class="t2">${prv.id===x._id?(prv.on?'tocando':'pausado'):'áudio'}</div></div><button class="adel" data-id="${x._id}" aria-label="Apagar áudio">Apagar</button></div>`).join(''):`<div class="hvazio">${AUD.length?'Nada encontrado.':'Nenhum áudio ainda. Toque em Adicionar MP3.'}</div>`; };
+    $('hlist').innerHTML=ls.length?ls.map(x=>`<div class="hrow${prv.id===x._id?' tocando':''}" data-aid="${x._id}"><div class="tx"><div class="t1">${esc(x.name)}</div><div class="t2">${prv.id===x._id?(prv.on?'tocando':'pausado'):'áudio'}</div></div><button class="aadd" data-id="${x._id}" aria-label="Adicionar a um show">＋ Show</button><button class="adel" data-id="${x._id}" aria-label="Apagar áudio">Apagar</button></div>`).join(''):`<div class="hvazio">${AUD.length?'Nada encontrado.':'Nenhum áudio ainda. Toque em Adicionar MP3.'}</div>`; };
   const b=document.createElement('button'); b.id='hmp3'; b.textContent='＋ Adicionar MP3'; $('hnew').after(b); b.onclick=()=>addMp3('lib');
   $('hlist').addEventListener('click',async e=>{ const d=e.target.closest('.adel'); if(!d) return; e.stopPropagation(); const x=audById(d.dataset.id); if(!x) return;
     let n=0; for(const s of SHOWS) for(const it of s.items){ if(it.t!=='s') continue; const j=libIdx(it.n); if(it.a===x._id||(!it.a&&j>=0&&LIB[j].au===x)) n++; }
