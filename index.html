@@ -714,7 +714,7 @@ function drawHome(){
   L.innerHTML=ls.length?ls.map(x=>`<button class="hrow" data-i="${x.i}"><div class="tx"><div class="t1">${esc(x.e.n)}</div><div class="t2">${x.e.k==='blank'?'só áudio':x.e.p+' '+(x.e.p===1?'página':'páginas')}</div></div><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9fb2cc" stroke-width="2" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>`).join(''):`<div class="hvazio">${LIB.length?'Nada encontrado.':'Nenhuma música ainda. Use Importar.'}</div>`;
 }
 window.syncHome=()=>{ if(showOpen!=null) drawDet(); };
-$('hlist').onclick=e=>{ const b=e.target.closest('.hrow'); if(!b) return; if(b.dataset.sid){ openShow(b.dataset.sid,false); return; } openEntry(LIB[+b.dataset.i]).catch(()=>toast('Não consegui abrir essa música.')); };
+$('hlist').onclick=e=>{ const b=e.target.closest('.hrow'); if(!b) return; if(b.dataset.sid){ openShow(b.dataset.sid,false); return; } if(b.dataset.i===undefined) return; openEntry(LIB[+b.dataset.i]).catch(()=>toast('Não consegui abrir essa música.')); };
 $('hq').oninput=drawHome;
 $('tab-m').onclick=()=>{ setTab('m'); drawHome(); };
 $('tab-s').onclick=()=>{ setTab('s'); drawHome(); };
