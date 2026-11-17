@@ -401,7 +401,7 @@ function build(sc,T,keyLabel,pi,tl){
       const Wt=(R-L), fk=document.body.classList.contains('pet')?.92:1, e=[], nd=[];
       for(let i=0;i<n;i++){ e[i]=(pp[i+1]-pp[i])*Wt;
         const cs=((bd[cid+'|'+bars[i].id]||{}).chords||[]); let w=0;
-        cs.forEach(c=>{ const ch=c.chord||{}; w+=(!ch.note&&!ch.chord)?36:chordText(0,0,ch,T).w*fk; });
+        cs.forEach(c=>{ const ch=c.chord||{}; w+=(!ch.note&&!ch.chord)?36:chordText(0,0,ch,T).w*fk*1.3; });
         nd[i]=cs.length>1?w+(cs.length-1)*9+34:0; }
       let D=0,S=0; const fl=[];
       for(let i=0;i<n;i++){ fl[i]=Math.max(.62*e[i],nd[i]); D+=Math.max(0,nd[i]-e[i]); S+=Math.max(0,e[i]-fl[i]); }
@@ -437,7 +437,7 @@ function build(sc,T,keyLabel,pi,tl){
       const pl=b.leftLine&&b.leftLine.partLabel;
       if(pl){ const col=PART[pl]||'#555'; const w=pl.length>1?32:24; o+=`<rect x="20" y="${yc-76}" width="${w}" height="24" rx="2" fill="${col}"/><text class="pl" x="${20+w/2}" y="${yc-57}" text-anchor="middle">${esc(pl)}</text>`; }
       (att[b.id]||[]).forEach(a=>{ const t=((bd[a.id+'|'+b.id]||{}).texts||[]).map(x=>x.text).join(' ').replace(/\s+$/,''); if(!t.trim()) return;
-        const tx=((bd[a.id+'|'+b.id]||{}).texts||[])[0]||{};         const tb=(a.anchorLaneId&&a.anchorLaneId===rid)?(below?yc-14:yc-100):yc-46; const ty=a.placement==='BELOW'?yc+(barsR?64:31):tb+0.9*((tx.offset&&tx.offset.offsetY)||0);
+        const tx=((bd[a.id+'|'+b.id]||{}).texts||[])[0]||{};         const tb=(a.anchorLaneId&&a.anchorLaneId===rid)?(below?yc-14:yc-100):yc-46; const hb=(((bd[cid+'|'+b.id]||{}).chords||[]).some(c=>c.chord&&(c.chord.bassNote||c.chord.bass)))?18:0; const ty=a.placement==='BELOW'?yc+(barsR?64:31):tb-hb+0.9*((tx.offset&&tx.offset.offsetY)||0);
         if(a.textAlign==='RIGHT') o+=`<text class="lb bt" x="${bx+bw-6}" y="${ty}" text-anchor="end">${esc(t)}</text>`;
         else o+=`<text class="lb bt" x="${bx+8}" y="${ty}">${esc(t)}</text>`; });
       const d=bd[cid+'|'+b.id]||{};
@@ -472,8 +472,10 @@ function fitChords(){
     const need=w.reduce((a,b)=>a+b,0)+gap*(els.length-1), avail=lim-(+els[0].dataset.x0);
     let s=1; if(els.length>1&&need>avail) s=Math.max(.4,avail/need);
     if(s<1) els.forEach(e=>{ if(e.classList.contains('ch')) e.style.fontSize=((document.body.classList.contains('pet')?52:54)*s)+'px'; });
-    let end=-1e9;
-    els.forEach(e=>{ const bw=e.getBBox().width; const x=Math.max(+e.dataset.x0,end+gap); e.setAttribute('x',x); end=x+bw; });
+    let end=-1e9; const xs=[], bws=[];
+    els.forEach(e=>{ const bw=e.getBBox().width; const x=Math.max(+e.dataset.x0,end+gap); xs.push(x); bws.push(bw); end=x+bw; });
+    if(end>lim){ let right=lim; for(let i=els.length-1;i>=0;i--){ xs[i]=Math.min(xs[i],right-bws[i]); right=xs[i]-gap; } }
+    els.forEach((e,i)=>e.setAttribute('x',xs[i]));
   }
 }
 
