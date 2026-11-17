@@ -96,7 +96,7 @@ body.solo .edge{display:flex}
 #home{position:absolute;inset:0;z-index:12;background:#283747;display:flex;flex-direction:column;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
 #home.off{display:none}
 #htop{height:64px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 8px 0 20px;background:#1f2b38}
-#htop b{font-size:24px;font-weight:700;color:#e8eef8}
+#htop b{font-size:22px;font-weight:700;color:#e8eef8;text-transform:uppercase;letter-spacing:1px;border:2px solid #8fa3bd;border-radius:12px;padding:6px 18px;cursor:pointer;background:#2a3a4c;-webkit-tap-highlight-color:transparent;user-select:none}#htop b:active{background:#3a4f66}
 #hmenu{width:48px;height:48px;border:0;background:none;display:flex;align-items:center;justify-content:center}
 #htabs{display:flex;margin:16px 20px 0;border:1px solid #4a5d74;border-radius:12px;overflow:hidden;flex:none}
 #htabs button{flex:1;height:52px;border:0;background:none;color:#b4cdf6;font-size:19px;font-weight:600}
@@ -216,7 +216,7 @@ body.pet .page .ch{font-size:52px}body.pet .page .nc{font-size:22px}body.pet .pa
     </div>
   </div>
   <div id="home">
-    <div id="htop"><b>Banda</b><button id="hmenu" aria-label="Menu"><svg width="24" height="24" viewBox="0 0 24 24" fill="#e8eef8" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button></div>
+    <div id="htop"><b id="hmodo" role="button" tabindex="0" aria-label="Trocar de modo">Banda</b><button id="hmenu" aria-label="Menu"><svg width="24" height="24" viewBox="0 0 24 24" fill="#e8eef8" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button></div>
     <div id="htabs"><button id="tab-s" class="on">Shows</button><button id="tab-m">Letras</button><button id="tab-a">Áudios</button></div>
     <label id="hsearch"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9fb2cc" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="hq" type="search" placeholder="Buscar música" autocomplete="off"></label>
     <button id="hnew">＋ Novo show</button>
@@ -625,10 +625,11 @@ $('file').onchange=async e=>{
   toast(ok+(ok===1?' música importada':' músicas importadas')+(bad?'. '+bad+' não abriu'+(bad>1?'ram':''):''));
 };
 const ST={banda:{shows:[]},solo:{shows:[]}};
-function setMode(m){ const troca=(m!==mode); if(m!==mode){ try{ au.pause(); }catch(e){} ST[mode]={shows:SHOWS.splice(0)}; SHOWS.push(...ST[m].shows); curEntry=null; curShow=null; showOpen=null; editing=false; setTab('s'); $('home').classList.remove('off'); document.body.classList.remove('limpo'); } mode=m; setTimeout(()=>{ try{ window.palcoSave&&window.palcoSave(); }catch(e){} },0); document.body.classList.remove('banda','solo'); document.body.classList.add(m); $('m-mode').textContent=m==='solo'?'Modo Banda':'Modo Solo'; document.querySelector('#htop b').textContent=m==='solo'?'Solo':'Banda'; requestAnimationFrame(()=>{sizeSvg();}); if(window.syncHome) syncHome(); if(troca){ drawHome(); updFl(); } }
+function setMode(m){ const troca=(m!==mode); if(m!==mode){ try{ au.pause(); }catch(e){} ST[mode]={shows:SHOWS.splice(0)}; SHOWS.push(...ST[m].shows); curEntry=null; curShow=null; showOpen=null; editing=false; setTab('s'); $('home').classList.remove('off'); document.body.classList.remove('limpo'); } mode=m; setTimeout(()=>{ try{ window.palcoSave&&window.palcoSave(); }catch(e){} },0); document.body.classList.remove('banda','solo'); document.body.classList.add(m); $('m-mode').textContent=m==='solo'?'Modo Banda':'Modo Solo'; $('hmodo').textContent=m==='solo'?'Solo':'Banda'; requestAnimationFrame(()=>{sizeSvg();}); if(window.syncHome) syncHome(); if(troca){ drawHome(); updFl(); } }
 $('m-wid').onclick=()=>{ AUTOW=!AUTOW; $('m-wid').textContent='Compassos: '+(AUTOW?'Auto':'Original'); render(); };
 $('m-font').onclick=()=>{ const on=document.body.classList.toggle('pet'); $('m-font').textContent='Fonte: '+(on?'Petaluma':'Palco Jazz'); document.fonts.load('50px PetalumaScript').then(()=>render()); render(); };
 $('m-mode').onclick=()=>setMode(mode==='solo'?'banda':'solo');
+$('hmodo').onclick=()=>setMode(mode==='solo'?'banda':'solo');
 $('m-upd').onclick=async()=>{ toast('Atualizando...'); try{ try{ window.palcoSave&&await window.palcoSave(); }catch(e){} await new Promise(r=>setTimeout(r,600)); const rs=await navigator.serviceWorker.getRegistrations(); await Promise.all(rs.map(r=>r.unregister())); const ks=await caches.keys(); await Promise.all(ks.map(k=>caches.delete(k))); }catch(e){} location.replace(location.pathname+'?u='+Date.now()); };
 
 var AUTO=0; const autoTxt=()=>AUTO===2?'Passar e tocar: Ligado':(AUTO===1?'Passar sozinho: Ligado':'Passar sozinho: Desligado');
