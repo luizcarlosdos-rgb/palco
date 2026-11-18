@@ -1,6 +1,6 @@
 {
-  "name": "Palco",
-  "short_name": "Palco",
+  "name": "Palco Live",
+  "short_name": "Palco Live",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
