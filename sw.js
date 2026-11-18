@@ -1,5 +1,5 @@
-const V='palco-v17';
-const FILES=['./','index.html','pdf.min.js','pdf.worker.min.js','manifest.webmanifest','icon-192.png','icon-512.png'];
+const V='palco-v18';
+const FILES=['./','index.html','pdf.min.js','pdf.worker.min.js','manifest.webmanifest','icon-192.png','icon-512.png','icon-192-maskable.png','icon-512-maskable.png'];
 self.addEventListener('install',e=>{ e.waitUntil(caches.open(V).then(c=>Promise.all(FILES.map(f=>fetch(f,{cache:'reload'}).then(r=>r.ok?c.put(f,r):0)))).then(()=>self.skipWaiting())); });
 self.addEventListener('activate',e=>{ e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==V).map(k=>caches.delete(k)))).then(()=>self.clients.claim())); });
 self.addEventListener('fetch',e=>{
