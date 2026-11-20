@@ -794,7 +794,7 @@ function drawDet(){
   if(!editing) selIdx=-1; let k=0; const last=s.items.length-1; const selIt=editing&&selIdx>=0?s.items[selIdx]:null, selJ=selIt&&selIt.t==='s'?libIdx(selIt.n):-1, selBlank=selJ>=0&&LIB[selJ].k==='blank';
   let h=s.items.map((it,i)=>{
     const ctl=editing?`<div class="dc"><button data-a="up" data-i="${i}" aria-label="Subir" ${i===0?'disabled':''}>▲</button><button data-a="dn" data-i="${i}" aria-label="Descer" ${i===last?'disabled':''}>▼</button><button class="x" data-a="rm" data-i="${i}" aria-label="Tirar do show">✕</button></div>`:'';
-    if(it.t==='b') return `<div class="drow blk"><div class="bn" ${editing?`data-a="rn" data-i="${i}"`:''}>${esc(it.name)}</div>${ctl}</div>`;
+    if(it.t==='b') return `<div class="drow blk"><div class="bn" ${editing?`data-a="rn" data-i="${i}"`:''}>${esc(it.name)}</div>${editing?`<button class="dau" data-a="blkm" data-i="${i}">＋ Letra</button>${mode==='solo'?`<button class="dau" data-a="blkmp3" data-i="${i}">＋ MP3</button>`:''}`:''}${ctl}</div>`;
     const j=libIdx(it.n), e=j>=0?LIB[j]:null; k++;
     const sc=e&&e.k==='lset'?((e.o.scores||[])[0]||{}):{};
     const parts=[sc.author, e&&e.k==='blank'?'Sem letra':null, e?(mode==='solo'?(itemAu(it,e)?'♪ '+itemAu(it,e).name:'Sem áudio'):null):'não está na biblioteca'].filter(Boolean); const gone=mode==='solo'&&e&&!itemAu(it,e)&&it.a&&it.a!=='-'; let t2=esc(parts.join(' · ')); if(gone) t2=t2.replace('Sem áudio','<span class="gone">Sem áudio</span>');
@@ -823,9 +823,11 @@ $('dlist').onclick=async e=>{
   else if(a==='rn'){ const v=await ask({title:'Nome do bloco',value:s.items[i].name,ok:'Salvar'}); if(v) s.items[i].name=v; }
   else if(a==='au'){ openApk(i); return; }
   else if(a==='lt'){ const j=libIdx(getShow(showOpen).items[i].n); if(j>=0) letraDoApp(LIB[j],true); return; }
-  else if(a==='addmp3'){ openPick(true); return; }
+  else if(a==='addmp3'){ insBlk=null; openPick(true); return; }
+  else if(a==='blkm'){ insBlk=i; openPick(false); return; }
+  else if(a==='blkmp3'){ insBlk=i; openPick(true); return; }
   else if(a==='paste'){ pasteList(); return; }
-  else if(a==='addm'){ const it=selIdx>=0&&s.items[selIdx], j=it&&it.t==='s'?libIdx(it.n):-1; if(j>=0&&LIB[j].k==='blank'){ selIdx=-1; letraDoApp(LIB[j],true); return; } openPick(false); return; }
+  else if(a==='addm'){ const it=selIdx>=0&&s.items[selIdx], j=it&&it.t==='s'?libIdx(it.n):-1; if(j>=0&&LIB[j].k==='blank'){ selIdx=-1; letraDoApp(LIB[j],true); return; } insBlk=null; openPick(false); return; }
   else if(a==='addb'){ const v=await ask({title:'Novo bloco',value:'',ok:'Criar'}); if(v) s.items.push({t:'b',name:v}); }
   else if(a==='ren'){ const v=await ask({title:'Nome do show',value:s.name,ok:'Salvar'}); if(v) s.name=v; }
   else if(a==='dup'){ SHOWS.push({id:uid(),name:s.name+' (cópia)',items:s.items.map(x=>({...x}))}); toast('Show duplicado.'); }
@@ -839,7 +841,9 @@ function loadAu(en){
   const ax=audFor(en); if(ax){ const i=media.indexOf(ax); if(i>=0){ if(i!==cur) pick(i); return; } }
   if(cur>=0){ au.pause(); au.removeAttribute('src'); au.load(); cur=-1; $('seek').value=0; $('t0').textContent='00:00'; $('t1').textContent='00:00'; drawMedia(); ppState(); }
 }
-let pickAud=false; let selIdx=-1;
+let pickAud=false; let selIdx=-1; let insBlk=null;
+function moveNew(s,n0){ if(insBlk==null||!s) return; const nv=s.items.splice(n0); let pos=insBlk+1; while(pos<s.items.length&&s.items[pos].t!=='b') pos++; s.items.splice(pos,0,...nv); insBlk=null; }
+window.moveNew=moveNew;
 function openPick(aud){ pickAud=aud===true; $('ph').textContent=pickAud?'Adicionar MP3':'Adicionar ao show'; $('pimp').textContent=pickAud?'Buscar no aparelho':'Importar'; pickOpen=true; pickSel.clear(); $('pq').value=''; $('pick').classList.add('on'); drawPick(); }
 function closePick(){ pickOpen=false; $('pick').classList.remove('on'); }
 function drawPick(){
@@ -853,7 +857,7 @@ function drawPick(){
 }
 $('plist').onclick=e=>{ const b=e.target.closest('.prow'); if(!b) return; const k=b.dataset.k; if(pickSel.has(k)) pickSel.delete(k); else pickSel.add(k); drawPick(); };
 $('pq').oninput=drawPick; $('pcan').onclick=closePick; $('pimp').onclick=()=>{ if(pickAud){ closePick(); addMp3('show'); return; } $('file').accept='.lset,.pdf,.json,application/pdf,application/json,application/octet-stream'; $('file').multiple=true; $('file').click(); };
-$('pok').onclick=()=>{ const s=getShow(showOpen); if(!s) return closePick(); const have=new Set(s.items.filter(i=>i.t==='s').map(i=>i.n.toLowerCase())); pickSel.forEach(k=>{ if(k.indexOf('aud:')===0){ const x=AUD.find(z=>z._id===k.slice(4)); if(!x) return; const p=x.name.split(/\s+-\s+/); const title=(p.length>1?p.slice(1).join(' - '):x.name).trim(); let j=libIdx(title.toLowerCase()); if(j<0){ LIB.push({n:title,k:'blank',o:null,p:1}); j=LIB.length-1; } s.items.push({t:'s',n:LIB[j].n,a:x._id}); return; } const j=libIdx(k); if(j>=0) s.items.push({t:'s',n:LIB[j].n}); }); try{ window.palcoSave&&window.palcoSave(); }catch(_){} closePick(); drawDet(); };
+$('pok').onclick=()=>{ const s=getShow(showOpen); if(!s) return closePick(); const have=new Set(s.items.filter(i=>i.t==='s').map(i=>i.n.toLowerCase())); const n0=s.items.length; pickSel.forEach(k=>{ if(k.indexOf('aud:')===0){ const x=AUD.find(z=>z._id===k.slice(4)); if(!x) return; const p=x.name.split(/\s+-\s+/); const title=(p.length>1?p.slice(1).join(' - '):x.name).trim(); let j=libIdx(title.toLowerCase()); if(j<0){ LIB.push({n:title,k:'blank',o:null,p:1}); j=LIB.length-1; } s.items.push({t:'s',n:LIB[j].n,a:x._id}); return; } const j=libIdx(k); if(j>=0) s.items.push({t:'s',n:LIB[j].n}); }); moveNew(s,n0); try{ window.palcoSave&&window.palcoSave(); }catch(_){} closePick(); drawDet(); };
 async function afterImp(en,fn){ if(pickOpen){ pickSel.add(en.n.toLowerCase()); drawPick(); toast('Importado: '+fn); } else { showOpen=null; editing=false; try{ window.prvStop&&window.prvStop(); }catch(_){} setTab('m'); $('hq').value=''; $('home').classList.remove('off'); drawHome(); toast('Importado na biblioteca: '+fn); const nv=document.querySelector('#hlist .nov'); if(nv) nv.scrollIntoView({block:'center'}); } }
 /* Solo: biblioteca de áudios, adicionar MP3, escolher áudio do show, colar lista */
 const AUD=[]; const PEND={};
@@ -875,9 +879,9 @@ function itemAu(it,e){ if(it.a==='-') return null; const x=it.a?audById(it.a):nu
   mf.onchange=()=>{ const fs=[...mf.files]; mf.value=''; if(!fs.length) return; const its=addFiles(fs);
     if(modo==='cur'){ const s=curShow&&getShow(curShow.id); if(s&&s.items[curShow.pos]){ s.items[curShow.pos].a=its[0]._id; if(curEntry) loadAu(curEntry); drawMedia(); toast('Áudio ligado a '+(curEntry?curEntry.n:'música')); } try{ window.palcoSave&&window.palcoSave(); }catch(e){} return; }
     if(modo==='pick'){ const s=getShow(showOpen); if(s&&s.items[apkIdx]) s.items[apkIdx].a=its[0]._id; apk.classList.remove('on'); drawDet(); toast('Áudio ligado'); return; }
-    if(modo==='show'){ const s=getShow(showOpen); let nv=0;
+    if(modo==='show'){ const s=getShow(showOpen); let nv=0; const n0=s?s.items.length:0;
       if(s) for(const it of its){ const p=it.name.split(/\s+-\s+/); const title=(p.length>1?p.slice(1).join(' - '):it.name).trim(); const i=findLib(title); let en; if(i>=0) en=LIB[i]; else { en={n:title,k:'blank',o:null,p:1}; LIB.push(en); nv++; } const x=inShow(s,en.n); if(x) x.a=it._id; else s.items.push({t:'s',n:en.n,a:it._id}); }
-      drawHome(); toast(its.length+(its.length>1?' MP3 adicionados':' MP3 adicionado')+(nv?' ('+nv+' sem letra)':'')); return; }
+      if(s&&window.moveNew) window.moveNew(s,n0); drawHome(); toast(its.length+(its.length>1?' MP3 adicionados':' MP3 adicionado')+(nv?' ('+nv+' sem letra)':'')); return; }
     drawHome(); toast(its.length+(its.length>1?' MP3 guardados':' MP3 guardado')); };
 
   /* aba Áudios: ＋ Show */
