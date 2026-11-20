@@ -181,8 +181,8 @@ body.banda #dname::before{content:'BANDA · '}body.solo #dname::before{content:'
 #di{width:100%;height:52px;margin-top:16px;border-radius:12px;border:1px solid #4a5d74;background:#283747;color:#e8eef8;font-size:19px;padding:0 14px;font-family:inherit;outline:0}
 #dbtn{display:flex;gap:12px;margin-top:20px}#dbtn button{flex:1;height:52px;border-radius:12px;border:1px solid #4a5d74;background:none;color:#e8eef8;font-size:18px;font-weight:600;font-family:inherit}
 #dbtn #dok{background:#b4cdf6;color:#1b2735;border-color:#b4cdf6}#dbtn #dok.red{background:#ff6b6b;border-color:#ff6b6b}
-.page .ch{font-size:54px}.page .qm{font-size:.81em}.page .supt{font-size:.74em}.page .sup{font-size:.70em}.page .qs{font-size:.52em}.page .ac{font-size:.63em}.page .rb{font-size:.85em}.page .bs{font-size:.67em}.page .sl{font-size:.63em}body.pet .page .ch,body.pet .page .lb,body.pet .page .tt,body.pet .page .pl,body.pet .page .ts,body.pet .page .en,body.pet .page .nc,body.pet .page .qm,body.pet .page .supt,body.pet .page .qs,body.pet .page .sup,body.pet .page .ac{font-family:'PetalumaScript','PalcoJazz',sans-serif}
-body.pet .page .ch{font-size:52px}body.pet .page .nc{font-size:22px}body.pet .page .lb{font-size:24px}body.pet .page .tt{font-size:50px}body.pet .page .ac{font-weight:400}body.pet .page .qm{font-size:.7em}body.pet .page .supt{font-size:.62em}body.pet .page .sup{font-size:.62em}body.pet .page .qs{font-size:.6em}body.pet .page .ac{font-size:.5em}
+.page .ch{font-size:54px}.page .qm{font-size:.81em}.page .supt{font-size:.5em}.page .sup{font-size:.5em}.page .qs{font-size:.46em}.page .ac{font-size:.63em}.page .rb{font-size:.85em}.page .bs{font-size:.67em}.page .sl{font-size:.63em}body.pet .page .ch,body.pet .page .lb,body.pet .page .tt,body.pet .page .pl,body.pet .page .ts,body.pet .page .en,body.pet .page .nc,body.pet .page .qm,body.pet .page .supt,body.pet .page .qs,body.pet .page .sup,body.pet .page .ac{font-family:'PetalumaScript','PalcoJazz',sans-serif}
+body.pet .page .ch{font-size:52px}body.pet .page .nc{font-size:22px}body.pet .page .lb{font-size:24px}body.pet .page .tt{font-size:50px}body.pet .page .ac{font-weight:400}body.pet .page .qm{font-size:.7em}body.pet .page .supt{font-size:.46em}body.pet .page .sup{font-size:.46em}body.pet .page .qs{font-size:.6em}body.pet .page .ac{font-size:.5em}
 #wrap{--bgc:#283747}body.claro #wrap{--bgc:#fff}.page .rt{stroke:var(--bgc);stroke-width:1px;stroke-linejoin:round}body.pet .page .rt{stroke:none}</style>
 </head>
 <body class="banda">
@@ -313,8 +313,8 @@ function chordText(x,y,c,T){
   if(mm_){ add('maj','qs',R0+8); add(mm_[2]||'7','sup',R0-16); }
   else if(ss_){ add('sus','qs',R0+8); if(ss_[1]) add(ss_[1],'sup',R0-16); }
   else if(q&&/\/.*[a-z]/i.test(q)){ const k=q.indexOf('/'), qa=q.slice(0,k), qb=q.slice(k+1); const w0=wd; let wa=0, wb=0;
-    (qa.match(/[a-z]+|\d+|[^a-z\d]+/gi)||[]).forEach(tk=>{ const b=wd; add(tk,/[a-z]/i.test(tk)?'supt':'sup',R0+2); wa+=wd-b; });
-    (qb.match(/[a-z]+|\d+|[^a-z\d]+/gi)||[]).forEach((tk,i)=>{ const b=wd; add(tk,/[a-z]/i.test(tk)?'supt':'sup',R0-36); wb+=wd-b; if(i===0) p_[p_.length-1]=p_[p_.length-1].replace('<tspan ','<tspan data-bk="1" '); });
+    (qa.match(/[a-z]+|\d+|[^a-z\d]+/gi)||[]).forEach(tk=>{ const b=wd; add(tk,/[a-z]/i.test(tk)?'supt':'sup',R0-4); wa+=wd-b; });
+    (qb.match(/[a-z]+|\d+|[^a-z\d]+/gi)||[]).forEach((tk,i)=>{ const b=wd; add(tk,/[a-z]/i.test(tk)?'supt':'sup',R0-32); wb+=wd-b; if(i===0) p_[p_.length-1]=p_[p_.length-1].replace('<tspan ','<tspan data-bk="1" '); });
     wd=w0+Math.max(wa,wb); }
   else if(q){ (q.match(/[a-z]+|\d+|[^a-z\d]+/gi)||[]).forEach(tk=>add(tk,/[a-z]/i.test(tk)?'supt':'sup',R0-16)); }
   if(bp0){ const bp=tr(bp0,T); add('/','sl',-2,-3); add(LET[bp.l]+sg(bp.a),'bs',22,-13); }
@@ -513,7 +513,7 @@ function avoid(){
   const cr=[]; for(const dy of [0,-4,-8,-12,4]) for(const dx of [0,8,-8,16,-16,24,-24,34,-34,46,-46,60,-60,76,-76]) cr.push([dx,dy]);
   cr.sort((a,b)=>(Math.abs(a[0])+Math.abs(a[1])*1.5)-(Math.abs(b[0])+Math.abs(b[1])*1.5));
   svg.querySelectorAll('g.rg').forEach(g=>place(g,cr));
-  const ct=[]; for(const dy of [0,4,8,12,16,-4,-8]) ct.push([0,dy]);
+  const ct=[]; for(const dy of [0,4,8,12,16,-4,-8,-12,-16,-20,-24]) ct.push([0,dy]);
   svg.querySelectorAll('text.bt').forEach(e=>place(e,ct));
 }
 let VPC={k:'',v:null};
