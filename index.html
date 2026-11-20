@@ -983,8 +983,10 @@ function itemAu(it,e){ if(it.a==='-') return null; const x=it.a?audById(it.a):nu
   }
   async function load(){
     try{ db=await open(); pdfjsLib.GlobalWorkerOptions.workerSrc='pdf.worker.min.js';
+      const mo0=await get('kv','modo'); if(mo0==='solo'&&mode!=='solo') setMode('solo');
       const lib=await all('lib'), meta=await all('meta'), aud=await all('audio'), kv=await get('kv','shows'), cache={};
-      for(const key of Object.keys(lib)){ const r=lib[key]; let o=r.o; if(r.k==='pdf'){ try{ o=await pdfjsLib.getDocument({data:new Uint8Array(r.bytes)}).promise; }catch(e){ continue; } }
+      const keys=Object.keys(lib); const docs=await Promise.all(keys.map(async key=>{ const r=lib[key]; if(r.k!=='pdf') return r.o; try{ return await pdfjsLib.getDocument({data:new Uint8Array(r.bytes)}).promise; }catch(e){ return null; } }));
+      for(const [ix,key] of keys.entries()){ const r=lib[key]; let o=docs[ix]; if(r.k==='pdf'&&!o) continue;
         const en={n:r.n,k:r.k,o,p:r.p,_saved:true}; const m=meta[key]||{}; if(m.pg) en.pg=m.pg;
         if(m.aid&&aud[m.aid]){ if(!cache[m.aid]){ cache[m.aid]={name:aud[m.aid].name,url:URL.createObjectURL(aud[m.aid].blob),_id:m.aid}; media.push(cache[m.aid]); } en.au=cache[m.aid]; }
         en._sig=JSON.stringify([en.pg||0,en.au?en.au._id:null]);
@@ -1193,7 +1195,7 @@ try{ document.fonts.load("50px PalcoJazz").then(()=>render()); }catch(e){}
   document.addEventListener('visibilitychange',acorda);
   (async()=>{ try{ dbs=await open(); const n=await kvGet('nivel'); if(n&&n in NIV) S.nivel=n; const e=await kvGet('eq'); if(Array.isArray(e)&&e.length===6) S.eq=e.map(v=>+v||0); const l=await kvGet('lufs'); if(l&&typeof l==='object') S.lufs=l; }catch(e){}
     build(); if(chain) S.eq.forEach((v,i)=>chain.eq[i].gain.value=v); els().forEach(prepara); trazer(); desenha();
-    setInterval(()=>{ trazer(); if(chain&&au.paused) fila(false); aplicaTudo(); },3000); })();
+    const t0=Date.now(); setInterval(()=>{ trazer(); if(chain&&au.paused&&Date.now()-t0>20000) fila(false); aplicaTudo(); },3000); })();
   window.palcoSom={S,mede,aplica,cadeia:()=>chain,ctx:()=>ctx};
 })();
 </script>
