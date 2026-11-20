@@ -630,28 +630,31 @@ $('m-imp').onclick=()=>{ $('file').accept='.lset,.pdf,.json,application/pdf,appl
 
 $('file').onchange=async e=>{
   const fs=[...e.target.files]; const forN=window.impFor; window.impFor=null; if(!fs.length) return; const ctx0=forN&&curShow?{id:curShow.id,pos:curShow.pos}:null;
-  let ok=0, bad=0, last=null, lastName='';
+  let ok=0, bad=0, skip=0, last=null, lastName='';
   for(const f of fs){
     try{
       const nome=f.name.replace(/\.[^.]+$/,'');
       let en;
       if(/\.pdf$/i.test(f.name)||f.type==='application/pdf'){
+        if(!forN&&!(await dupLetra(nome))){ skip++; continue; }
         if(!window.pdfjsLib) throw new Error('sem leitor de PDF');
         pdfjsLib.GlobalWorkerOptions.workerSrc='pdf.worker.min.js';
         const doc=await pdfjsLib.getDocument({data:new Uint8Array(await f.arrayBuffer())}).promise;
         en=addLib({n:forN||nome,k:'pdf',o:doc,p:doc.numPages});
       } else { const obj=JSON.parse(await f.text()); const sc=obj&&obj.scores&&obj.scores[0]; if(!sc||!sc.pages) throw new Error('arquivo sem partitura');
+        if(!forN&&!(await dupLetra(sc.title||obj.title||nome))){ skip++; continue; }
         en=addLib({n:forN||sc.title||obj.title||nome,k:'lset',o:obj,p:(sc.pages||[]).length||1}); }
       ok++; last=en; lastName=f.name; (window.NEWIMP=window.NEWIMP||new Set()).add(en.n);
       if(pickOpen) pickSel.add(en.n.toLowerCase());
     }catch(err){ bad++; }
   }
   e.target.value='';
+  if(!ok&&skip&&!bad){ toast('Nada importado: você já tinha '+(skip>1?'essas letras.':'essa letra.')); return; }
   if(!ok){ toast(fs.some(f=>/^audio\//.test(f.type)||/\.(mp3|wav|m4a)$/i.test(f.name))?'Isso é áudio. Para áudio use Adicionar MP3, na aba Áudios.':'Não consegui abrir esse arquivo. Use um .lset do LiveSet ou um PDF.'); return; }
   if(forN){ await openEntry(last,ctx0); toast('Letra importada em '+forN); return; }
   if(fs.length===1){ await afterImp(last,lastName); return; }
   if(pickOpen) drawPick(); else { showOpen=null; editing=false; setTab('m'); $('home').classList.remove('off'); drawHome(); const nv=document.querySelector('#hlist .nov'); if(nv) nv.scrollIntoView({block:'center'}); }
-  toast(ok+(ok===1?' música importada':' músicas importadas')+(bad?'. '+bad+' não abriu'+(bad>1?'ram':''):''));
+  toast(ok+(ok===1?' música importada':' músicas importadas')+(skip?'. '+skip+' já existia'+(skip>1?'m':''):'')+(bad?'. '+bad+' não abriu'+(bad>1?'ram':''):''));
 };
 const ST={banda:{shows:[]},solo:{shows:[]}};
 function setMode(m){ const troca=(m!==mode); if(m!==mode){ try{ au.pause(); }catch(e){} ST[mode]={shows:SHOWS.splice(0)}; SHOWS.push(...ST[m].shows); curEntry=null; curShow=null; showOpen=null; editing=false; setTab('s'); $('home').classList.remove('off'); document.body.classList.remove('limpo'); } mode=m; setTimeout(()=>{ try{ window.palcoSave&&window.palcoSave(); }catch(e){} },0); document.body.classList.remove('banda','solo'); document.body.classList.add(m); $('m-mode').textContent=m==='solo'?'Modo Banda':'Modo Solo'; $('hmodo').textContent=m==='solo'?'Solo':'Banda'; requestAnimationFrame(()=>{sizeSvg();}); if(window.syncHome) syncHome(); if(troca){ drawHome(); updFl(); } }
@@ -724,6 +727,17 @@ try{ new ResizeObserver(()=>sizeSvg()).observe($('stage')); }catch(e){}
 /* biblioteca e tela inicial */
 const LIB=[]; let aba='s';
 function setTab(a){ if(window.prvStop) window.prvStop(); aba=a; ['m','s','a'].forEach(k=>$('tab-'+k).classList.toggle('on',k===a)); }
+/* aviso de arquivo repetido: compara nome da música + cantor, sem importar ordem, caixa ou acento */
+const DUP_STOP=new Set(['track','playback','pb','pdf','letra','cifra','audio','mp3','lset','de','da','do','e','a','o']);
+function dupTok(n){ return new Set(String(n).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\.(mp3|pdf|lset|wav|m4a)$/,'').replace(/[^a-z0-9]+/g,' ').split(' ').filter(w=>w&&!DUP_STOP.has(w))); }
+function dupSim(a,b){ const A=dupTok(a),B=dupTok(b); if(!A.size||!B.size) return false; if(A.has('loop')!==B.has('loop')) return false;
+  const [sm,bg]=A.size<=B.size?[A,B]:[B,A]; for(const w of sm) if(!bg.has(w)) return false;
+  return sm.size>=2||[...sm][0].length>=8; }
+async function dupAsk({title,msg,ok,cancel}){ const c=$('dcan'), m=$('dm'), old=c.textContent; c.textContent=cancel||'Cancelar'; m.style.whiteSpace='pre-line'; try{ return await ask({title,msg,ok}); } finally{ c.textContent=old; m.style.whiteSpace=''; } }
+async function dupLetra(n){ const ex=LIB.find(x=>x.n.toLowerCase()===String(n).toLowerCase());
+  if(ex&&ex.k!=='blank') return !!(await dupAsk({title:'Você já tem esta letra',msg:ex.n+'\nSubstituir pela nova ou manter a que está?',ok:'Substituir',cancel:'Manter a que está'}));
+  if(!ex){ const sim=LIB.find(x=>x.k!=='blank'&&dupSim(x.n,n)); if(sim) return !!(await dupAsk({title:'Parece que você já tem esta letra',msg:'Novo: '+n+'\nNo app: '+sim.n,ok:'Importar mesmo assim',cancel:'Não importar'})); }
+  return true; }
 function addLib(en){ const i=LIB.findIndex(x=>x.n.toLowerCase()===en.n.toLowerCase()); if(i>=0){ en.au=LIB[i].au; LIB[i]=en; } else LIB.push(en); drawHome(); return en; }
 async function openEntry(en,ctx){ await openEntry0(en); curEntry=en; curShow=ctx||null; loadAu(en); updateNav(); updFl(); }
 /* setas flutuantes no modo só-letra, dentro de um show */
@@ -874,15 +888,21 @@ function itemAu(it,e){ if(it.a==='-') return null; const x=it.a?audById(it.a):nu
   const findAud=t=>{ const k=norm(t); if(k.length<4) return null; return AUD.find(x=>norm(x.name)===k)||AUD.find(x=>norm(x.name).includes(k))||null; };
   window.findAud=findAud;
   const inShow=(s,n)=>s.items.find(x=>x.t==='s'&&x.n.toLowerCase()===n.toLowerCase());
-  const addFiles=fs=>fs.map(f=>{ const nome=f.name.replace(/\.[^.]+$/,''); let it=AUD.find(x=>x.name===nome&&x.size===f.size); if(!it){ it={name:nome,size:f.size,url:URL.createObjectURL(f),_id:pidFor(nome)||newId(),blob:f}; AUD.push(it); media.push(it); (window.NEWAUD=window.NEWAUD||new Set()).add(it._id); } return it; });
+  const addFiles=async fs=>{ const out=[]; out.novos=0;
+    for(const f of fs){ const nome=f.name.replace(/\.[^.]+$/,''); let it=AUD.find(x=>x.name===nome&&x.size===f.size);
+      if(!it){ const sim=AUD.find(x=>dupSim(x.name,nome));
+        if(sim){ const manter=await dupAsk({title:'Você já tem este áudio',msg:'Novo: '+nome+'\nNo app: '+sim.name,ok:'Manter os dois',cancel:'Usar o que já tem'}); if(!manter){ out.push(sim); continue; } }
+        it={name:nome,size:f.size,url:URL.createObjectURL(f),_id:pidFor(nome)||newId(),blob:f}; AUD.push(it); media.push(it); (window.NEWAUD=window.NEWAUD||new Set()).add(it._id); out.novos++; }
+      out.push(it); }
+    return out; };
   window.addMp3=m=>{ modo=m; mf.click(); };
-  mf.onchange=()=>{ const fs=[...mf.files]; mf.value=''; if(!fs.length) return; const its=addFiles(fs);
+  mf.onchange=async()=>{ const fs=[...mf.files]; mf.value=''; if(!fs.length) return; const its=await addFiles(fs);
     if(modo==='cur'){ const s=curShow&&getShow(curShow.id); if(s&&s.items[curShow.pos]){ s.items[curShow.pos].a=its[0]._id; if(curEntry) loadAu(curEntry); drawMedia(); toast('Áudio ligado a '+(curEntry?curEntry.n:'música')); } try{ window.palcoSave&&window.palcoSave(); }catch(e){} return; }
     if(modo==='pick'){ const s=getShow(showOpen); if(s&&s.items[apkIdx]) s.items[apkIdx].a=its[0]._id; apk.classList.remove('on'); drawDet(); toast('Áudio ligado'); return; }
     if(modo==='show'){ const s=getShow(showOpen); let nv=0; const n0=s?s.items.length:0;
       if(s) for(const it of its){ const p=it.name.split(/\s+-\s+/); const title=(p.length>1?p.slice(1).join(' - '):it.name).trim(); const i=findLib(title); let en; if(i>=0) en=LIB[i]; else { en={n:title,k:'blank',o:null,p:1}; LIB.push(en); nv++; } const x=inShow(s,en.n); if(x) x.a=it._id; else s.items.push({t:'s',n:en.n,a:it._id}); }
       if(s&&window.moveNew) window.moveNew(s,n0); drawHome(); toast(its.length+(its.length>1?' MP3 adicionados':' MP3 adicionado')+(nv?' ('+nv+' sem letra)':'')); return; }
-    if(!showOpen&&typeof setTab==='function') setTab('a'); drawHome(); toast(its.length+(its.length>1?' MP3 guardados':' MP3 guardado')); try{ const nv=document.querySelector('#hlist .nov'); if(nv) nv.scrollIntoView({block:'center',inline:'nearest'}); }catch(_){} };
+    if(!showOpen&&typeof setTab==='function') setTab('a'); drawHome(); toast(its.novos+(its.novos===1?' MP3 novo':' MP3 novos')+(its.length-its.novos>0?'. '+(its.length-its.novos)+' já '+(its.length-its.novos>1?'estavam':'estava')+' no app':'')); try{ const nv=document.querySelector('#hlist .nov'); if(nv) nv.scrollIntoView({block:'center',inline:'nearest'}); }catch(_){} };
 
   /* aba Áudios: ＋ Show */
   const sov=document.createElement('div'); sov.id='sov'; sov.innerHTML='<div id="sbx"><h3>Adicionar a qual show?</h3><div id="slist"></div><div class="pb"><button id="scn">Cancelar</button></div></div>'; $('app').appendChild(sov);
