@@ -535,7 +535,7 @@ async function pdfLinks(p,c){ const anns=await p.getAnnotations(); const v=p.get
     let idx; try{ idx=typeof d[0]==='object'?await pdfDoc.getPageIndex(d[0]):d[0]; }catch(e){ continue; }
     const r=v.convertToViewportRectangle(a.rect), x=Math.min(r[0],r[2]), y=Math.min(r[1],r[3]), w=Math.abs(r[2]-r[0]), h=Math.abs(r[3]-r[1]);
     const b=document.createElement('a'); b.style.cssText=`left:${x/v.width*100}%;top:${y/v.height*100}%;width:${w/v.width*100}%;height:${h/v.height*100}%`;
-    b.onclick=e=>{ e.preventDefault(); e.stopPropagation(); if(idx===pageIdx) return; pageIdx=idx; render(); $('stage').scrollTo(0,0); }; box.appendChild(b); }
+    b.onclick=e=>{ e.preventDefault(); e.stopPropagation(); if(idx===pageIdx) return; pageIdx=idx; render(); $('stage').scrollTo(0,0); recPg(); }; box.appendChild(b); }
   if(c.isConnected) $('wrap').appendChild(box); }
 function renderImg(sc){
   const pg=sc.pages[pageIdx]||{}, adj=((((sc.pageAdjustments||{}).pages)||{})[pageIdx])||{}, cr=adj.crop||{};
@@ -618,8 +618,8 @@ $('tom').onclick=openSheet; $('scrim').onclick=closeSheet;
 
 /* páginas */
 function nav(d){ const s=$('stage'), h=s.clientHeight*0.92, n=nPages();
-  if(d>0){ if(s.scrollTop+s.clientHeight<s.scrollHeight-6){ s.scrollTo({top:s.scrollTop+h,behavior:'smooth'}); return; } if(pageIdx>=n-1){ if(showSib(1)!=null) goSib(1,false); return; } pageIdx++; render(); s.scrollTo(0,0); }
-  else { if(s.scrollTop>6){ s.scrollTo({top:Math.max(0,s.scrollTop-h),behavior:'smooth'}); return; } if(pageIdx<=0){ if(showSib(-1)!=null) goSib(-1,false); return; } pageIdx--; render(); s.scrollTo(0,s.scrollHeight); }
+  if(d>0){ if(s.scrollTop+s.clientHeight<s.scrollHeight-6){ s.scrollTo({top:s.scrollTop+h,behavior:'smooth'}); return; } if(pageIdx>=n-1){ if(showSib(1)!=null) goSib(1,false); return; } pageIdx++; render(); s.scrollTo(0,0); recPg(); }
+  else { if(s.scrollTop>6){ s.scrollTo({top:Math.max(0,s.scrollTop-h),behavior:'smooth'}); return; } if(pageIdx<=0){ if(showSib(-1)!=null) goSib(-1,false); return; } pageIdx--; render(); s.scrollTo(0,s.scrollHeight); recPg(); }
 }
 $('prev').onclick=$('pl').onclick=()=>nav(-1); $('next').onclick=$('pr').onclick=()=>nav(1);
 $('tomTop').onclick=openSheet;
@@ -744,9 +744,16 @@ async function dupLetra(n){ const ex=LIB.find(x=>x.n.toLowerCase()===String(n).t
   if(!ex){ const sim=LIB.find(x=>x.k!=='blank'&&dupSim(x.n,n)); if(sim) return !!(await dupAsk({title:'Parece que você já tem esta letra',msg:'Novo: '+n+'\nNo app: '+sim.n,ok:'Importar mesmo assim',cancel:'Não importar'})); }
   return true; }
 function addLib(en){ const i=LIB.findIndex(x=>x.n.toLowerCase()===en.n.toLowerCase()); if(i>=0){ en.au=LIB[i].au; LIB[i]=en; } else LIB.push(en); drawHome(); return en; }
-async function openEntry(en,ctx){ await openEntry0(en); curEntry=en; curShow=ctx||null; loadAu(en); updateNav(); updFl(); }
+var PGMAP={};
+function pgKey(ax,en){ return ax&&ax._id?ax._id+'|'+String(en.n).toLowerCase():null; }
+function recPg(){ try{ if(mode==='solo'&&kind==='pdf'&&cur>=0&&curEntry&&pdfDoc&&pdfDoc.numPages>1){ const k=pgKey(media[cur],curEntry); if(k&&PGMAP[k]!==pageIdx){ PGMAP[k]=pageIdx; window.palcoSave&&window.palcoSave(); } } }catch(e){} }
+const _nrm=t=>String(t).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
+async function findPageByText(doc,ax){ const parts=ax.name.split(/\s+-\s+/); const t=_nrm(parts.length>1?parts.slice(1).join(' '):ax.name); if(t.length<4) return -1;
+  for(let i=1;i<=doc.numPages;i++){ try{ const pg=await doc.getPage(i); const tc=await pg.getTextContent(); if(_nrm(tc.items.map(x=>x.str).join(' ')).includes(t)) return i-1; }catch(e){} } return -1; }
+async function openEntry(en,ctx){ const old=curShow; curShow=ctx||null; let ax=null; try{ ax=mode==='solo'?audFor(en):null; }catch(e){} curShow=old; window.__pgAx=ax; await openEntry0(en); window.__pgAx=null; curEntry=en; curShow=ctx||null; loadAu(en); updateNav(); updFl();
+  if(ax&&en.k==='pdf'&&en.o&&en.o.numPages>1){ const k=pgKey(ax,en); if(PGMAP[k]===undefined){ const f=await findPageByText(en.o,ax); if(f>=0&&curEntry===en){ PGMAP[k]=f; if(pageIdx!==f){ pageIdx=f; render(); $('stage').scrollTo(0,0); } try{ window.palcoSave&&window.palcoSave(); }catch(e){} } } } }
 /* setas flutuantes no modo só-letra, dentro de um show */
-(function(){ const mk=(id,d,path)=>{ const b=document.createElement('button'); b.id=id; b.className='fl'; b.setAttribute('aria-label',d<0?'Música anterior':'Próxima música'); b.innerHTML='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="'+path+'"/></svg>'; b.onclick=e=>{ e.stopPropagation(); const n=nPages(); if(d>0&&pageIdx<n-1){ pageIdx++; render(); $('stage').scrollTo(0,0); updFl(); return; } if(d<0&&pageIdx>0){ pageIdx--; render(); $('stage').scrollTo(0,0); updFl(); return; } goSib(d,mode==='solo'&&AUTO===2); }; $('app').appendChild(b); }; mk('fl-p',-1,'M15 5l-7 7 7 7'); mk('fl-n',1,'M9 5l7 7-7 7');
+(function(){ const mk=(id,d,path)=>{ const b=document.createElement('button'); b.id=id; b.className='fl'; b.setAttribute('aria-label',d<0?'Música anterior':'Próxima música'); b.innerHTML='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="'+path+'"/></svg>'; b.onclick=e=>{ e.stopPropagation(); const n=nPages(); if(d>0&&pageIdx<n-1){ pageIdx++; render(); recPg(); $('stage').scrollTo(0,0); updFl(); return; } if(d<0&&pageIdx>0){ pageIdx--; render(); recPg(); $('stage').scrollTo(0,0); updFl(); return; } goSib(d,mode==='solo'&&AUTO===2); }; $('app').appendChild(b); }; mk('fl-p',-1,'M15 5l-7 7 7 7'); mk('fl-n',1,'M9 5l7 7-7 7');
   const pg=document.createElement('div'); pg.id='flpg'; $('app').appendChild(pg); const st=document.createElement('style'); st.textContent='#flpg{position:absolute;right:12px;top:8px;font-size:15px;color:#8fa3bd;opacity:.85;display:none;z-index:30;pointer-events:none}body.limpo #flpg.on{display:block}'; document.head.appendChild(st); })();
 function updFl(){ const lim=document.body.classList.contains('limpo')&&curShow&&$('home').classList.contains('off'); const n=nPages(); $('fl-p').classList.toggle('on',!!lim&&(pageIdx>0||showSib(-1)!=null)); $('fl-n').classList.toggle('on',!!lim&&(pageIdx<n-1||showSib(1)!=null)); const f=$('flpg'); if(f){ f.textContent=n>1?(pageIdx+1)+'/'+n:''; f.classList.toggle('on',n>1); } }
 
@@ -771,7 +778,7 @@ async function openEntry0(en){
   if(en.k==='blank'){ document.body.classList.remove('pdf'); kind='blank'; song=null; pdfDoc=null; pageIdx=0; $('ttl').textContent=en.n; $('wrap').innerHTML='<div class="semletra"><b>'+esc(en.n)+'</b><span>Esta música ainda não tem letra.</span><button id="blapp" class="btn" style="padding:14px 22px;font-size:20px;border-radius:12px;border:1px solid #b4cdf6;background:#1f3556;color:#e8eef8;margin-bottom:10px">Letra do app (sem internet)</button><button id="blimp" class="btn" style="padding:14px 22px;font-size:20px;border-radius:12px;border:1px solid #4c6a94;background:#1f3556;color:#e8eef8">Do aparelho ou do Drive</button></div>'; $('blapp').onclick=()=>letraDoApp(en); $('blimp').onclick=()=>{ window.impFor=en.n; $('file').accept='.lset,.pdf,.json,application/pdf,application/json,application/octet-stream'; $('file').multiple=false; $('file').click(); }; hideHome(); $('stage').scrollTo(0,0); return; }
   if(en.k==='pdf'){
     pdfjsLib.GlobalWorkerOptions.workerSrc='pdf.worker.min.js';
-    pdfDoc=en.o; kind='pdf'; song=null; pageIdx=en.pg||0; zoom=1; document.body.classList.add('pdf');
+    pdfDoc=en.o; kind='pdf'; song=null; pageIdx=en.pg||0; { const _k=pgKey(window.__pgAx,en); if(_k&&PGMAP[_k]!==undefined&&PGMAP[_k]<en.o.numPages) pageIdx=PGMAP[_k]; } zoom=1; document.body.classList.add('pdf');
     $('ttl').textContent=en.n; hideHome(); await renderPdf(); $('stage').scrollTo(0,0);
   } else { document.body.classList.remove('pdf'); load(en.o,en.n); hideHome(); $('stage').scrollTo(0,0); }
 }
@@ -857,7 +864,7 @@ function showSib(d){ if(!curShow) return null; const s=getShow(curShow.id); if(!
 async function goSib(d,play){ const i=showSib(d); if(i==null) return; const s=getShow(curShow.id); const e=LIB[libIdx(s.items[i].n)]; await openEntry(e,{id:s.id,pos:i}); if(play&&cur>=0) au.play().catch(()=>{}); }
 function startShow(){ const s=getShow(showOpen); if(!s) return; const i=s.items.findIndex(it=>it.t==='s'&&libIdx(it.n)>=0); if(i<0){ toast('Adicione músicas ao show primeiro.'); return; } editing=false; openEntry(LIB[libIdx(s.items[i].n)],{id:s.id,pos:i}).catch(()=>toast('Não consegui abrir essa música.')); }
 function loadAu(en){
-  const ax=audFor(en); if(ax){ const i=media.indexOf(ax); if(i>=0){ if(i!==cur) pick(i); return; } }
+  const ax=audFor(en); if(ax){ const i=media.indexOf(ax); if(i>=0){ if(i!==cur) pick(i); else drawMedia(); return; } }
   if(cur>=0){ au.pause(); au.removeAttribute('src'); au.load(); cur=-1; $('seek').value=0; $('t0').textContent='00:00'; $('t1').textContent='00:00'; drawMedia(); ppState(); }
 }
 let pickAud=false; let selIdx=-1; let insBlk=null;
@@ -963,7 +970,7 @@ function itemAu(it,e){ if(it.a==='-') return null; const x=it.a?audById(it.a):nu
 })();
 /* guardar no aparelho (IndexedDB): letras, MP3 ligados e shows de cada modo */
 (function(){
-  let db=null, ready=false, busy=false, again=false, lastShows='', lastMode=null, lastAuto=null, lastPend='{}';
+  let db=null, ready=false, busy=false, again=false, lastShows='', lastMode=null, lastAuto=null, lastPend='{}', lastPm='{}';
   const open=()=>new Promise((res,rej)=>{ try{ const r=indexedDB.open('palco',1); r.onupgradeneeded=()=>{ ['lib','meta','audio','kv'].forEach(s=>r.result.createObjectStore(s)); }; r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }catch(e){ rej(e); } });
   const get=(s,k)=>new Promise((res,rej)=>{ const r=db.transaction(s,'readonly').objectStore(s).get(k); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); });
   const all=s=>new Promise((res,rej)=>{ const o={}; const r=db.transaction(s,'readonly').objectStore(s).openCursor(); r.onsuccess=()=>{ const c=r.result; if(c){ o[c.key]=c.value; c.continue(); } else res(o); }; r.onerror=()=>rej(r.error); });
@@ -977,6 +984,7 @@ function itemAu(it,e){ if(it.a==='-') return null; const x=it.a?audById(it.a):nu
         const sig=JSON.stringify([en.pg||0,aid]); if(en._sig!==sig){ await put('meta',key,{pg:en.pg||0,aid}); en._sig=sig; }
       }
       if(mode!==lastMode){ await put('kv','modo',mode); lastMode=mode; } if(AUTO!==lastAuto){ await put('kv','auto',AUTO); lastAuto=AUTO; }
+      const pmj=JSON.stringify(PGMAP); if(pmj!==lastPm){ await put('kv','pgmap',PGMAP); lastPm=pmj; }
       const pj=JSON.stringify(PEND); if(pj!==lastPend){ await put('kv','pend',PEND); lastPend=pj; }
       const sh={banda:ST.banda.shows,solo:ST.solo.shows}; sh[mode]=SHOWS.slice(); const js=JSON.stringify(sh); if(js!==lastShows){ await put('kv','shows',sh); lastShows=js; }
     }catch(e){}
@@ -993,7 +1001,7 @@ function itemAu(it,e){ if(it.a==='-') return null; const x=it.a?audById(it.a):nu
         en._sig=JSON.stringify([en.pg||0,en.au?en.au._id:null]);
         const i=libIdx(en.n); if(i>=0) LIB[i]=en; else LIB.push(en); }
       for(const id of Object.keys(aud)){ if(!cache[id]){ cache[id]={name:aud[id].name,url:URL.createObjectURL(aud[id].blob),_id:id}; media.push(cache[id]); } cache[id]._saved=true; AUD.push(cache[id]); }
-      const pe=await get('kv','pend'); if(pe){ for(const k in pe) PEND[k]=pe[k]; } lastPend=JSON.stringify(PEND);
+      const pgm=await get('kv','pgmap'); if(pgm){ Object.assign(PGMAP,pgm); } lastPm=JSON.stringify(PGMAP); const pe=await get('kv','pend'); if(pe){ for(const k in pe) PEND[k]=pe[k]; } lastPend=JSON.stringify(PEND);
       const mo=await get('kv','modo'), au0=await get('kv','auto'); if(mo==='solo'&&mode!=='solo') setMode('solo'); AUTO=au0===true?1:(+au0||0); lastAuto=AUTO; lastMode=mode; try{ $('m-auto').textContent=autoTxt(); }catch(e){}
       if(kv){ ST.banda.shows=kv.banda||[]; ST.solo.shows=kv.solo||[]; SHOWS.splice(0); SHOWS.push(...ST[mode].shows); lastShows=JSON.stringify(kv); }
     }catch(e){ db=null; }
