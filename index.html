@@ -88,11 +88,11 @@ body.solo .edge{display:flex}
 .page .sup{font-size:30px}.page .supt{font-family:'PalcoJazz',sans-serif;font-size:30px;font-weight:400}.page .qs{font-family:'PalcoJazz',sans-serif;font-size:28px;font-weight:400}
 .page .rb{font-size:40px}.page .sl{font-size:26px}.page .bs{font-size:28px}
 .page .nc{font-family:'PalcoJazz',sans-serif;font-size:28px;fill:#9aa0a6}
-.page .lb{font-family:'PalcoJazz',sans-serif;font-size:21px;fill:currentColor;white-space:pre}
+.page .lb{font-family:'PalcoJazz',sans-serif;font-size:21px;fill:currentColor;white-space:pre}.page .lb.bt{font-size:18px}.page .rpt{fill:#d6291f}body:not(.claro) .page .rpt{fill:#ff6b6b}
 .page .tt{font-family:'PalcoJazz',sans-serif;font-size:44px;fill:currentColor}
 .page .pl{font-family:'PalcoJazz',sans-serif;font-size:22px;fill:#fff}
 .page .ts{font-family:'PalcoJazz',sans-serif;font-size:24px;fill:#d6291f}
-.page .en{font-family:'PalcoJazz',sans-serif;font-size:15px;fill:#d6291f}body:not(.claro) .page .ts,body:not(.claro) .page .en{fill:#ff6b6b}body:not(.claro) .page .nc{fill:#8fa3bf}
+.page .en{font-family:'PalcoJazz',sans-serif;font-size:13px;fill:#d6291f}body:not(.claro) .page .ts,body:not(.claro) .page .en{fill:#ff6b6b}body:not(.claro) .page .nc{fill:#8fa3bf}
 
 #home{position:absolute;inset:0;z-index:12;background:#283747;display:flex;flex-direction:column;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
 #home.off{display:none}
@@ -390,9 +390,9 @@ function build(sc,T,keyLabel,pi,tl){
   let yc=CEL?200:170, prevOff=null, prevEnd=false, prevBelow=false;
   page.rows.forEach((row,ri)=>{
     if(row.specialType==='STRUCTURE'){
-      const ps=(row.specialTypeData&&row.specialTypeData.parts)||[]; const y0=yc+75+0.69*(row.offsetY||0);
-      ps.forEach((p,j)=>{ const cy=y0+43*j, pl=p.partLabel||''; const col=PART[pl]||'#555'; const w=pl.length>1?32:24; o+=`<rect x="20" y="${cy-12}" width="${w}" height="24" rx="2" fill="${col}"/><text class="pl" x="${20+w/2}" y="${cy+5}" text-anchor="middle">${esc(pl)}</text>`+(p.comments?`<text class="lb" x="${20+w+12}" y="${cy+6}">${esc(String(p.comments).replace(/○/g,'ª'))}</text>`:''); });
-      yc+=48+36*ps.length+0.82*(row.offsetY||0); return;
+      const ps=(row.specialTypeData&&row.specialTypeData.parts)||[]; const y0=yc+75+0.69*(row.offsetY||0); const hz=((row.specialTypeData||{}).orientation)==='HORIZONTAL';
+      ps.forEach((p,j)=>{ const cy=hz?y0:y0+43*j, pl=p.partLabel||''; const col=PART[pl]||'#555'; const w=pl.length>1?32:24; const px=hz?20+((p.offset&&p.offset.offsetX)||0):20; o+=`<rect x="${px}" y="${cy-12}" width="${w}" height="24" rx="2" fill="${col}"/><text class="pl" x="${px+w/2}" y="${cy+5}" text-anchor="middle">${esc(pl)}</text>`+(p.comments?`<text class="lb" x="${px+w+12}" y="${cy+6}">${esc(String(p.comments).replace(/○/g,'ª'))}</text>`:''); });
+      yc+=48+36*(hz?1:ps.length)+0.82*(row.offsetY||0); return;
     }
     const bars=row.bars||[], bd=row.barsData||{}, att=row.attachedLanes||{};
     const hasR=!!rid&&bars.some(b=>bd[rid+'|'+b.id]);
@@ -428,27 +428,31 @@ function build(sc,T,keyLabel,pi,tl){
         const ln=(xx,w,col)=>`<line x1="${xx}" y1="${y1}" x2="${xx}" y2="${y2}" stroke="${col||'#111'}" stroke-width="${w}"/>`;
         const my=(y1+y2)/2, dots=(xx)=>`<circle cx="${xx}" cy="${my-8}" r="3.2" fill="${RED}"/><circle cx="${xx}" cy="${my+8}" r="3.2" fill="${RED}"/>`;
         if(b.end||b.begin){
-          if(b.end) o+=ln(x,5,RED)+ln(x-8,2,RED)+dots(x-16);
-          if(b.begin) o+=ln(x,5,RED)+ln(x+8,2,RED)+dots(x+16);
+          const arc=(xx,dir,w)=>`<path d="M${xx} ${y1-3} Q${xx+dir*8} ${my} ${xx} ${y2+3}" stroke="${RED}" stroke-width="${w}" fill="none" stroke-linecap="round"/>`;
+          if(b.end) o+=arc(x,1,3.8)+arc(x-7,1,1.5)+dots(x-14);
+          if(b.begin) o+=arc(x,-1,3.8)+arc(x+7,-1,1.5)+dots(x+14);
         } else if(b.dbl){ o+=ln(x-3,2)+ln(x+3,2); }
         else if(b.fin){ o+=ln(x-4,2)+ln(x+1,5); }
         else o+=ln(x,2);
       });
     }
+    for(let i=0;i<=n;i++){ const pl=(bars[i-1]&&bars[i-1].rightLine&&bars[i-1].rightLine.partLabel)||(bars[i]&&bars[i].leftLine&&bars[i].leftLine.partLabel); if(!pl) continue;
+      const col=PART[pl]||'#555', w=pl.length>1?34:26, bxl=Math.max(2,X(i)-w/2), by=barsR?yc-22:yc-62;
+      o+=`<rect x="${bxl}" y="${by}" width="${w}" height="26" rx="2" fill="${col}"/><text class="pl" x="${bxl+w/2}" y="${by+19}" text-anchor="middle">${esc(pl)}</text>`; }
     bars.forEach((b,i)=>{
       const bx=X(i), bw=X(i+1)-X(i), bb=bnd(i);
-      const tc=b.leftLine&&b.leftLine.timeSignatureChange; if(tc){ ts=Object.assign({},ts,tc); if(i===0){ const ty0=barsR&&!barsC?yc+34:yc-12; o+=`<text class="ts" x="30" y="${ty0}" text-anchor="middle">${ts.top}</text><text class="ts" x="30" y="${ty0+20}" text-anchor="middle">${ts.bottom}</text>`; } }
+      const tc=b.leftLine&&b.leftLine.timeSignatureChange; if(tc){ ts=Object.assign({},ts,tc); if(i===0){ if(barsR){ o+=`<text class="ts" x="${L-11}" y="${yc+29.5}" text-anchor="middle" style="font-size:19px">${ts.top}</text><text class="ts" x="${L-11}" y="${yc+45.5}" text-anchor="middle" style="font-size:19px">${ts.bottom}</text>`; } else { const ty0=yc-12; o+=`<text class="ts" x="30" y="${ty0}" text-anchor="middle">${ts.top}</text><text class="ts" x="30" y="${ty0+20}" text-anchor="middle">${ts.bottom}</text>`; } } }
       const beats=ts.bottom===8?ts.top/2:ts.top;
       const pad=bb.begin?(bb.end?26:30):14;
       const xf=bt=>bx+pad+(bt-1)*(bw-pad-10)/beats;
-      const pl=b.leftLine&&b.leftLine.partLabel;
-      if(pl){ const col=PART[pl]||'#555'; const w=pl.length>1?32:24; o+=`<rect x="20" y="${yc-76}" width="${w}" height="24" rx="2" fill="${col}"/><text class="pl" x="${20+w/2}" y="${yc-57}" text-anchor="middle">${esc(pl)}</text>`; }
       (att[b.id]||[]).forEach(a=>{ const t=((bd[a.id+'|'+b.id]||{}).texts||[]).map(x=>x.text).join(' ').replace(/\s+$/,''); if(!t.trim()) return;
         const tx=((bd[a.id+'|'+b.id]||{}).texts||[])[0]||{};         const tb=(a.anchorLaneId&&a.anchorLaneId===rid)?(below?yc-14:yc-100):yc-46; const hb=(((bd[cid+'|'+b.id]||{}).chords||[]).some(c=>c.chord&&(c.chord.bassNote||c.chord.bass)))?18:0; const ty=a.placement==='BELOW'?yc+(barsR?64:31):tb-hb+0.9*((tx.offset&&tx.offset.offsetY)||0);
-        if(a.textAlign==='RIGHT') o+=`<text class="lb bt" x="${bx+bw-6}" y="${ty}" text-anchor="end">${esc(t)}</text>`;
-        else o+=`<text class="lb bt" x="${bx+8}" y="${ty}">${esc(t)}</text>`; });
+        const rc=/^\d+\s*x$/i.test(t.trim())?' rpt':'';
+        if(a.textAlign==='RIGHT') o+=`<text class="lb bt${rc}" x="${bx+bw-6}" y="${ty}" text-anchor="end">${esc(t)}</text>`;
+        else { const ns=(t.match(/^ */)||[''])[0].length; o+=`<text class="lb bt${rc}" x="${bx+4+3.8*ns}" y="${ty}">${esc(t.slice(ns))}</text>`; } });
       const d=bd[cid+'|'+b.id]||{};
-      if(d.fullBarSymbol==='SAME'){ const cx=bx+bw/2; o+=`<path d="M${cx-8} ${yc-4} L${cx+8} ${yc-22}" stroke="#111" stroke-width="3.4"/><circle cx="${cx-9}" cy="${yc-20}" r="2.6" fill="#111"/><circle cx="${cx+9}" cy="${yc-6}" r="2.6" fill="#111"/>`; }
+      const dr=(rid&&bd[rid+'|'+b.id])||{};
+      if((dr.fullBarSymbol||d.fullBarSymbol)==='SAME'){ const cx=bx+bw/2, cy=barsR?yc+29.5:yc-13; o+=`<path d="M${cx-8} ${cy+9} L${cx+8} ${cy-9}" stroke="#111" stroke-width="3.4"/><circle cx="${cx-9}" cy="${cy-7}" r="2.6" fill="#111"/><circle cx="${cx+9}" cy="${cy+7}" r="2.6" fill="#111"/>`; }
       let endX=-1;
       (d.chords||[]).slice().sort((a,b)=>a.beat-b.beat).forEach(c=>{
         const ch=c.chord||{}; const ox=(c.offset&&c.offset.offsetX)||0; const x=Math.max(xf(c.beat)+ox,endX+3);
@@ -456,8 +460,12 @@ function build(sc,T,keyLabel,pi,tl){
         if(!ch.note&&!ch.chord){ o+=`<text class="nc" ${dg} x="${x}" y="${yc}">N.C.</text>`; endX=x+36; }
         else { const r=chordText(x,yc,ch,T); o+=r.s.replace('<text ','<text '+dg+' '); endX=x+r.w; }
       });
-      if(rid){ const r=bd[rid+'|'+b.id]; if(r&&r.symbols){ const Rr=bx+bw-8, Y=below?yc+(staff?30:52):yc-50+4*rrat; const xr=bt=>Rr-(Rr-xf(bt))*(1.2*.72/sR); o+=`<g class="rg" transform="translate(${Rr} ${Y}) scale(${sR}) translate(${-Rr} ${-Y})">${rhythm(r.symbols,xr,Y)}</g>`; } }
-      if(b.specificEnding){ const ye=(below||!hasR)?yc-62:yc-106; o+=`<path d="M${bx+2} ${ye+9} V${ye} H${bx+bw-2}" stroke="${RED}" stroke-width="1.6" fill="none"/><text class="en" x="${bx+7}" y="${ye-5}">${esc(b.specificEnding)}</text>`; }
+      if(rid){ const r=bd[rid+'|'+b.id]; let rsyms=r&&r.symbols;
+        if(rsyms&&barsR&&staff){ const sb=yc+46, cy=yc+29.5; rsyms=rsyms.filter(sy=>{ if(sy.symbol!=='NOTE') return true; const v=String(sy.value||'');
+          if(!v){ const sx=xf(sy.beat); o+=`<line x1="${sx}" y1="${sb-9}" x2="${sx}" y2="${sb+18}" stroke="#111" stroke-width="1.7"/>`; return false; }
+          if(v==='1'){ const x0=xf(sy.beat)-1; o+=`<path d="M${x0} ${cy+8} L${x0+13} ${cy-8} L${x0+28} ${cy-8} L${x0+15} ${cy+8} Z" stroke="#111" stroke-width="1.8" fill="none" stroke-linejoin="round"/>`; return false; } return true; }); if(!rsyms.length) rsyms=null; }
+        if(rsyms){ const Rr=bx+bw-8, Y=below?yc+(staff?30:52):yc-50+4*rrat; const xr=bt=>Rr-(Rr-xf(bt))*(1.2*.72/sR); o+=`<g class="rg" transform="translate(${Rr} ${Y}) scale(${sR}) translate(${-Rr} ${-Y})">${rhythm(rsyms,xr,Y)}</g>`; } }
+      if(b.specificEnding){ const ye=(below||!hasR)?yc-62:yc-106; o+=`<path d="M${bx+2} ${ye+14} V${ye} H${bx+bw-10}" stroke="${RED}" stroke-width="1.4" fill="none"/><text class="en" x="${bx+7}" y="${ye+13}">${esc(b.specificEnding)}</text>`; }
     });
   });
   const H=PH?yc+60:Math.max(1170,yc+100);
@@ -507,7 +515,7 @@ function avoid(){
   const fixed=[...svg.querySelectorAll('text.ch,text.nc')].map(R);
   const placed=[];
   const place=(e,cands)=>{
-    const box=R(e); const others=fixed.concat(placed);
+    const box=R(e); if(e.classList&&e.classList.contains('bt')){ box.l-=5; box.r+=3; } const others=fixed.concat(placed);
     let best=null,bs=1e9;
     for(const [dx,dy] of cands){ const b=sh(box,dx,dy); let c=0; for(const o of others) if(hit(b,o)) c++; const cost=c*1000+Math.abs(dx)+Math.abs(dy)*1.5; if(cost<bs){bs=cost;best=[dx,dy,b];} if(c===0) break; }
     if(best[0]||best[1]) e.setAttribute('transform',`translate(${best[0]} ${best[1]}) `+(e.getAttribute('transform')||''));
@@ -516,7 +524,7 @@ function avoid(){
   const cr=[]; for(const dy of [0,-4,-8,-12,4]) for(const dx of [0,8,-8,16,-16,24,-24,34,-34,46,-46,60,-60,76,-76]) cr.push([dx,dy]);
   cr.sort((a,b)=>(Math.abs(a[0])+Math.abs(a[1])*1.5)-(Math.abs(b[0])+Math.abs(b[1])*1.5));
   svg.querySelectorAll('g.rg').forEach(g=>place(g,cr));
-  const ct=[]; for(const dy of [0,4,8,12,16,-4,-8,-12,-16,-20,-24]) ct.push([0,dy]);
+  const ct=[]; for(const dx of [0,4,8,12,16,20,26,32,40]) ct.push([dx,0]); for(const dy of [4,8,12,16,-4,-8,-12,-16,-20,-24]) ct.push([0,dy]);
   svg.querySelectorAll('text.bt').forEach(e=>place(e,ct));
 }
 let VPC={k:'',v:null};
@@ -529,7 +537,9 @@ function nPages(){ if(kind==='pdf') return pdfDoc?pdfDoc.numPages:0; if(!song) r
 function updateNav(){ const s=$('stage'), n=nPages(), h=s.clientHeight*0.92; const tot=Math.max(1,Math.ceil((s.scrollHeight-s.clientHeight-4)/h)+1); const top=s.scrollTop<=6, bot=s.scrollTop+s.clientHeight>=s.scrollHeight-6; const cur=bot?tot:Math.min(tot,Math.round(s.scrollTop/h)+1);
   $('pg').textContent=n>1?`${pageIdx+1}/${n}`:''; try{ updFl(); }catch(e){}
   [$('prev'),$('pl')].forEach(b=>b.disabled=pageIdx<=0&&top&&showSib(-1)==null); [$('next'),$('pr')].forEach(b=>b.disabled=pageIdx>=n-1&&bot&&showSib(1)==null); }
-async function renderPdf(){ const p=await pdfDoc.getPage(pageIdx+1); const vp=p.getViewport({scale:2.4}); const c=document.createElement('canvas'); c.width=vp.width; c.height=vp.height; await p.render({canvasContext:c.getContext('2d'),viewport:vp}).promise; ASP=vp.width/vp.height; $('wrap').innerHTML=''; $('wrap').appendChild(c); sizeSvg(); updateNav(); try{ await pdfLinks(p,c); }catch(e){} }
+async function renderPdf(){ const p=await pdfDoc.getPage(pageIdx+1); const vp=p.getViewport({scale:2.4}); const c=document.createElement('canvas'); c.width=vp.width; c.height=vp.height; await p.render({canvasContext:c.getContext('2d'),viewport:vp}).promise; const cr=curEntry&&curEntry.k==='pdf'&&curEntry.crop; let cv=c;
+  if(cr){ const sx=Math.round(c.width*cr.left/100), sy=Math.round(c.height*cr.top/100), sw=Math.round(c.width*(1-(cr.left+cr.right)/100)), sh=Math.round(c.height*(1-(cr.top+cr.bottom)/100)); if(sw>50&&sh>50){ cv=document.createElement('canvas'); cv.width=sw; cv.height=sh; cv.getContext('2d').drawImage(c,sx,sy,sw,sh,0,0,sw,sh); } }
+  ASP=cv.width/cv.height; $('wrap').innerHTML=''; $('wrap').appendChild(cv); sizeSvg(); updateNav(); if(cv===c){ try{ await pdfLinks(p,c); }catch(e){} } }
 /* links internos do PDF (índice -> letra e letra -> índice) */
 (function(){ const s=document.createElement('style'); s.textContent='#wrap{position:relative}.lks{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}.lks a{position:absolute;display:block;cursor:pointer;pointer-events:auto;-webkit-tap-highlight-color:rgba(80,140,255,.25)}'; document.head.appendChild(s); })();
 async function pdfLinks(p,c){ const anns=await p.getAnnotations(); const v=p.getViewport({scale:1}); const box=document.createElement('div'); box.className='lks';
@@ -645,8 +655,14 @@ $('file').onchange=async e=>{
         const doc=await pdfjsLib.getDocument({data:new Uint8Array(await f.arrayBuffer())}).promise;
         en=addLib({n:forN||nome,k:'pdf',o:doc,p:doc.numPages});
       } else { const obj=JSON.parse(await f.text()); const sc=obj&&obj.scores&&obj.scores[0]; if(!sc||!sc.pages) throw new Error('arquivo sem partitura');
-        if(!forN&&!(await dupLetra(sc.title||obj.title||nome))){ skip++; continue; }
-        en=addLib({n:forN||sc.title||obj.title||nome,k:'lset',o:obj,p:(sc.pages||[]).length||1}); }
+        const tt=String(sc.title||obj.title||nome).trim();
+        if(!forN&&!(await dupLetra(tt))){ skip++; continue; }
+        if(sc.type==='PDF'&&sc.pdfData&&sc.pdfData[0]){
+          if(!window.pdfjsLib) throw new Error('sem leitor de PDF'); pdfjsLib.GlobalWorkerOptions.workerSrc='pdf.worker.min.js';
+          const du=String(sc.pdfData[(sc.pages[0]||{}).pdfDataIndex||0]||sc.pdfData[0]), bin=atob(du.slice(du.indexOf(',')+1)), u8=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u8[i]=bin.charCodeAt(i);
+          const doc=await pdfjsLib.getDocument({data:u8}).promise; en=addLib({n:forN||tt,k:'pdf',o:doc,p:doc.numPages});
+          const cr=(((sc.pageAdjustments||{}).pages||{})['0']||{}).crop; if(cr&&(cr.left||cr.top||cr.right||cr.bottom)) en.crop={left:cr.left||0,top:cr.top||0,right:cr.right||0,bottom:cr.bottom||0};
+        } else en=addLib({n:forN||tt,k:'lset',o:obj,p:(sc.pages||[]).length||1}); }
       ok++; last=en; lastName=f.name; (window.NEWIMP=window.NEWIMP||new Set()).add(en.n);
       if(pickOpen) pickSel.add(en.n.toLowerCase());
     }catch(err){ bad++; }
@@ -1000,7 +1016,7 @@ function itemAu(it,e){ if(it.a==='-') return null; const x=it.a?audById(it.a):nu
     try{
       for(const x of AUD.slice()){ if(!x._saved){ const bl=x.blob||await (await fetch(x.url)).blob(); await put('audio',x._id,{name:x.name,blob:bl}); x._saved=true; } }
       for(const en of LIB.slice()){ const key=en.n.toLowerCase();
-        if(!en._saved){ const rec={n:en.n,k:en.k,p:en.p}; if(en.k==='pdf') rec.bytes=await en.o.getData(); else rec.o=en.o; await put('lib',key,rec); en._saved=true; }
+        if(!en._saved){ const rec={n:en.n,k:en.k,p:en.p}; if(en.crop) rec.crop=en.crop; if(en.k==='pdf') rec.bytes=await en.o.getData(); else rec.o=en.o; await put('lib',key,rec); en._saved=true; }
         let aid=null; if(en.au){ if(!en.au._id){ const id='a'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); const b=await (await fetch(en.au.url)).blob(); await put('audio',id,{name:en.au.name,blob:b}); en.au._id=id; } aid=en.au._id; }
         const sig=JSON.stringify([en.pg||0,aid]); if(en._sig!==sig){ await put('meta',key,{pg:en.pg||0,aid}); en._sig=sig; }
       }
@@ -1017,7 +1033,7 @@ function itemAu(it,e){ if(it.a==='-') return null; const x=it.a?audById(it.a):nu
       const lib=await all('lib'), meta=await all('meta'), aud=await all('audio'), kv=await get('kv','shows'), cache={};
       const keys=Object.keys(lib); const docs=await Promise.all(keys.map(async key=>{ const r=lib[key]; if(r.k!=='pdf') return r.o; try{ return await pdfjsLib.getDocument({data:new Uint8Array(r.bytes)}).promise; }catch(e){ return null; } }));
       for(const [ix,key] of keys.entries()){ const r=lib[key]; let o=docs[ix]; if(r.k==='pdf'&&!o) continue;
-        const en={n:r.n,k:r.k,o,p:r.p,_saved:true}; const m=meta[key]||{}; if(m.pg) en.pg=m.pg;
+        const en={n:r.n,k:r.k,o,p:r.p,_saved:true}; if(r.crop) en.crop=r.crop; const m=meta[key]||{}; if(m.pg) en.pg=m.pg;
         if(m.aid&&aud[m.aid]){ if(!cache[m.aid]){ cache[m.aid]={name:aud[m.aid].name,url:URL.createObjectURL(aud[m.aid].blob),_id:m.aid}; media.push(cache[m.aid]); } en.au=cache[m.aid]; }
         en._sig=JSON.stringify([en.pg||0,en.au?en.au._id:null]);
         const i=libIdx(en.n); if(i>=0) LIB[i]=en; else LIB.push(en); }
@@ -1092,7 +1108,7 @@ syncHome(); drawHome();
   const b64=u=>{ let s=''; for(let i=0;i<u.length;i+=0x8000) s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000)); return btoa(s); };
   const ub64=s=>{ const bin=atob(s), u=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i); return u; };
   $('m-bkp').onclick=async()=>{ try{ const lib=[];
-    for(const en of LIB){ const r={n:en.n,k:en.k,p:en.p,pg:en.pg||0,aid:en.au?en.au._id:null}; if(en.k==='pdf') r.b=b64(await en.o.getData()); else r.o=en.o; lib.push(r); }
+    for(const en of LIB){ const r={n:en.n,k:en.k,p:en.p,pg:en.pg||0,aid:en.au?en.au._id:null}; if(en.crop) r.crop=en.crop; if(en.k==='pdf') r.b=b64(await en.o.getData()); else r.o=en.o; lib.push(r); }
     const names=Object.assign({},PEND); AUD.forEach(x=>{ names[x._id]=x.name; });
     const sh={banda:ST.banda.shows,solo:ST.solo.shows}; sh[mode]=SHOWS.slice();
     const d={app:'palco',v:1,data:new Date().toISOString(),modo:mode,lib,shows:sh,audios:names};
@@ -1109,7 +1125,7 @@ syncHome(); drawHome();
     const ns=Object.keys(d.shows||{}).reduce((t,m)=>t+((d.shows[m]||[]).length),0);
     const ok=await ask({title:'Restaurar backup?',msg:d.lib.length+' letras e '+ns+' shows. Nada do que já está no app é apagado; letras com o mesmo nome são atualizadas.',ok:'Restaurar'}); if(!ok) return;
     try{ pdfjsLib.GlobalWorkerOptions.workerSrc='pdf.worker.min.js'; const nm=d.audios||{}, idByEntry={}; let nl=0, np=0;
-      for(const r of d.lib){ idByEntry[r.n.toLowerCase()]=r.aid||null; try{ if(r.k==='pdf'){ const doc=await pdfjsLib.getDocument({data:ub64(r.b)}).promise; const en={n:r.n,k:'pdf',o:doc,p:doc.numPages}; if(r.pg) en.pg=r.pg; addLib(en); } else if(r.k==='lset'){ addLib({n:r.n,k:'lset',o:r.o,p:r.p}); } else addLib({n:r.n,k:'blank',o:null,p:r.p||1}); nl++; }catch(e){} }
+      for(const r of d.lib){ idByEntry[r.n.toLowerCase()]=r.aid||null; try{ if(r.k==='pdf'){ const doc=await pdfjsLib.getDocument({data:ub64(r.b)}).promise; const en={n:r.n,k:'pdf',o:doc,p:doc.numPages}; if(r.pg) en.pg=r.pg; if(r.crop) en.crop=r.crop; addLib(en); } else if(r.k==='lset'){ addLib({n:r.n,k:'lset',o:r.o,p:r.p}); } else addLib({n:r.n,k:'blank',o:null,p:r.p||1}); nl++; }catch(e){} }
       const fixAu=it=>{ if(it.t!=='s') return; let a=it.a; if(!a){ a=idByEntry[String(it.n).toLowerCase()]; } if(!a||a==='-') return; const name=nm[a]; const ex=name?AUD.find(x=>x.name===name):null; if(ex){ it.a=ex._id; return; } if(name){ PEND[a]=name; np++; } it.a=a; };
       const have=new Set([...SHOWS,...ST.banda.shows,...ST.solo.shows].map(s=>s.id)); let nsh=0;
       for(const m of ['banda','solo']){ for(const s of (d.shows[m]||[])){ if(have.has(s.id)) continue; if(m==='solo') s.items.forEach(fixAu); (m===mode?SHOWS:ST[m].shows).push(s); have.add(s.id); nsh++; } }
