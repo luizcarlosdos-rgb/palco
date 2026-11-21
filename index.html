@@ -677,6 +677,7 @@ function drawMedia(){
   if(sh){ L.innerHTML=sh.items.map((it,p)=>it.t==='s'&&libIdx(it.n)>=0?`<button data-p="${p}" class="${p===curShow.pos?'cur':''}">${esc(it.n)}</button>`:'').join(''); }
   else L.innerHTML=media.map((m,i)=>`<button data-i="${i}" class="${i===cur?'cur':''}">${esc(m.name)}</button>`).join('');
   $('mchip').textContent=cur>=0?media[cur].name:'Sem mídia'; $('mchip').classList.toggle('empty',cur<0);
+  if(mode==='solo'&&cur>=0&&curEntry){ const nm=media[cur].name; $('ttl').innerHTML=esc(nm)+(curEntry.n&&curEntry.n.toLowerCase()!==nm.toLowerCase()?'<small>'+esc(curEntry.n)+'</small>':''); }
 }
 function pick(i){ cur=i; au.src=media[i].url; au.load(); $('seek').value=0; $('t0').textContent='00:00'; $('t1').textContent='00:00'; drawMedia(); ppState(); }
 $('mchip').onclick=e=>{ e.stopPropagation(); const L=$('mlist'); drawMedia(); L.style.display=L.style.display==='block'?'none':'block'; };
