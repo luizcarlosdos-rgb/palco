@@ -143,7 +143,7 @@ body.banda #dname::before{content:'BANDA · '}body.solo #dname::before{content:'
 .drow .t2{display:block;font-size:15px;color:#9fb2cc;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .drow.mis .t1{opacity:.5}
 .drow.blk{background:#22303f;min-height:52px}.drow.blk .bn{flex:1;padding:0 20px;font-size:16px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#b4cdf6;min-height:52px;display:flex;align-items:center}
-.dc{display:flex;gap:6px;padding:0 12px 0 0;flex:none}
+.dc{display:flex;gap:6px;padding:0 12px 0 0;flex:none}#dlist .drow.arr{position:relative;z-index:5;background:#35506e;box-shadow:0 6px 18px rgba(0,0,0,.5);transition:none;opacity:.95}#dlist.arrastando{touch-action:none;-webkit-user-select:none;user-select:none}#dlist .drow{-webkit-touch-callout:none}
 .dc button,.dau{min-width:46px;height:46px;border-radius:10px;border:1px solid #4a5d74;background:none;color:#e8eef8;font-size:16px;font-family:inherit}
 .dc button[disabled]{opacity:.25}.dc .x{color:#ff6b6b}
 .dau{margin-right:6px;padding:0 10px;color:#b4cdf6}
@@ -819,7 +819,7 @@ function drawDet(){
   $('dname').textContent=s.name; $('dedit').textContent=editing?'Pronto':'Editar'; $('home').classList.toggle('edt',editing);
   if(!editing) selIdx=-1; let k=0; const last=s.items.length-1; const selIt=editing&&selIdx>=0?s.items[selIdx]:null, selJ=selIt&&selIt.t==='s'?libIdx(selIt.n):-1, selBlank=selJ>=0&&LIB[selJ].k==='blank';
   let h=s.items.map((it,i)=>{
-    const ctl=editing?`<div class="dc"><button data-a="up" data-i="${i}" aria-label="Subir" ${i===0?'disabled':''}>▲</button><button data-a="dn" data-i="${i}" aria-label="Descer" ${i===last?'disabled':''}>▼</button><button class="x" data-a="rm" data-i="${i}" aria-label="Tirar do show">✕</button></div>`:'';
+    const ctl=editing?`<div class="dc"><button class="x" data-a="rm" data-i="${i}" aria-label="Tirar do show">✕</button></div>`:'';
     if(it.t==='b') return `<div class="drow blk"><div class="bn" ${editing?`data-a="rn" data-i="${i}"`:''}>${esc(it.name)}</div>${editing?`<button class="dau" data-a="blkm" data-i="${i}">＋ Letra</button>${mode==='solo'?`<button class="dau" data-a="blkmp3" data-i="${i}">＋ MP3</button>`:''}`:''}${ctl}</div>`;
     const j=libIdx(it.n), e=j>=0?LIB[j]:null; k++;
     const sc=e&&e.k==='lset'?((e.o.scores||[])[0]||{}):{};
@@ -839,6 +839,23 @@ function ask({title,value=null,ok='OK',danger=false,msg=''}){ return new Promise
 $('hnew').onclick=async()=>{ const v=await ask({title:'Novo show',value:'',ok:'Criar'}); if(!v) return; const s={id:uid(),name:v,items:[]}; SHOWS.push(s); openShow(s.id,true); };
 $('dback').onclick=()=>{ showOpen=null; editing=false; drawHome(); };
 $('dedit').onclick=()=>{ editing=!editing; drawDet(); };
+
+/* editar show: segurar e arrastar para reorganizar */
+(function(){ const L=$('dlist'); let t=null,row=null,from=-1,y0=0,sy0=0,on=false,auto=0,raf=0;
+  const rows=()=>[...L.querySelectorAll(':scope>.drow')];
+  const stop=()=>{ clearTimeout(t); cancelAnimationFrame(raf); auto=0; if(row){ row.classList.remove('arr'); row.style.transform=''; } L.classList.remove('arrastando'); row=null; on=false; };
+  const pos=cy=>{ const rs=rows(); let to=from; rs.forEach((r,i)=>{ if(i===from) return; const b=r.getBoundingClientRect(), m=b.top+b.height/2; if(i<from&&cy<m) to=Math.min(to,i); if(i>from&&cy>m) to=Math.max(to,i); }); return to; };
+  L.addEventListener('pointerdown',e=>{ if(!editing||e.button>0) return; const r=e.target.closest('.drow'); if(!r||e.target.closest('.dc,.dau')) return; clearTimeout(t); y0=e.clientY; sy0=L.scrollTop; const px=e.clientX; t=setTimeout(()=>{ row=r; from=rows().indexOf(r); if(from<0){ row=null; return; } on=true; L.classList.add('arrastando'); r.classList.add('arr'); try{ navigator.vibrate&&navigator.vibrate(20); }catch(_){} loop(); },380); L._px=px; });
+  const move=cy=>{ if(!on||!row) return; row.style.transform='translateY('+(cy-y0+(L.scrollTop-sy0))+'px)'; };
+  let lastY=0;
+  const loop=()=>{ if(!on) return; const b=L.getBoundingClientRect(); if(lastY&&lastY<b.top+60) L.scrollTop-=10; else if(lastY&&lastY>b.bottom-60) L.scrollTop+=10; move(lastY||y0); raf=requestAnimationFrame(loop); };
+  document.addEventListener('pointermove',e=>{ lastY=e.clientY; if(!on&&t&&Math.abs(e.clientY-y0)>10&&!row){ clearTimeout(t); t=null; } if(on){ e.preventDefault(); move(e.clientY); } },{passive:false});
+  document.addEventListener('touchmove',e=>{ if(on) e.preventDefault(); },{passive:false});
+  const fim=e=>{ clearTimeout(t); t=null; if(!on){ return; } const to=pos(lastY||y0); const f=from; stop(); L._drag=Date.now(); if(to!==f){ const sh=getShow(showOpen); if(sh){ const it=sh.items.splice(f,1)[0]; sh.items.splice(to,0,it); selIdx=-1; try{ window.palcoSave&&window.palcoSave(); }catch(_){} drawDet(); } } else drawDet(); };
+  document.addEventListener('pointerup',fim); document.addEventListener('pointercancel',fim);
+  L.addEventListener('contextmenu',e=>{ if(editing) e.preventDefault(); });
+  L.addEventListener('click',e=>{ if(L._drag&&Date.now()-L._drag<400){ e.stopPropagation(); e.preventDefault(); } },true);
+})();
 $('dlist').onclick=async e=>{
   const b=e.target.closest('[data-a]'); if(!b) return; const s=getShow(showOpen); if(!s) return; const i=+b.dataset.i, a=b.dataset.a;
   if(a==='open'){ if(editing){ selIdx=(selIdx===i?-1:i); drawDet(); return; } const j=libIdx(s.items[i].n); if(j<0){ toast('Essa música não está na biblioteca. Importe de novo.'); return; } openEntry(LIB[j],{id:s.id,pos:i}).catch(()=>toast('Não consegui abrir essa música.')); return; }
