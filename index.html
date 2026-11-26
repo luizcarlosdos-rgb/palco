@@ -845,7 +845,7 @@ function libIdx(n){ return LIB.findIndex(x=>x.n.toLowerCase()===String(n).toLowe
 function getShow(id){ return SHOWS.find(s=>s.id===id); }
 function drawShows(){
   $('hlist').innerHTML=SHOWS.length?SHOWS.map(s=>{ const ns=s.items.filter(i=>i.t==='s').length, nb=s.items.filter(i=>i.t==='b').length;
-    return `<div class="swrap"><button class="hrow" data-sid="${s.id}"><div class="tx"><div class="t1">${esc(s.name)}</div><div class="t2">${ns} ${ns===1?'música':'músicas'}${nb?' · '+nb+(nb===1?' bloco':' blocos'):''}</div></div>${CHEV}</button><button class="sdel" data-sid="${s.id}" aria-label="Apagar show">Apagar</button></div>`; }).join(''):'<div class="hvazio">Nenhum show ainda.</div>';
+    return `<div class="swrap w2"><button class="hrow" data-sid="${s.id}"><div class="tx"><div class="t1">${esc(s.name)}</div><div class="t2">${ns} ${ns===1?'música':'músicas'}${nb?' · '+nb+(nb===1?' bloco':' blocos'):''}</div></div>${CHEV}</button><button class="sren" data-sid="${s.id}" aria-label="Renomear show">Renomear</button><button class="sdel" data-sid="${s.id}" aria-label="Apagar show">Apagar</button></div>`; }).join(''):'<div class="hvazio">Nenhum show ainda.</div>';
 }
 function openShow(id,edit){ showOpen=id; editing=!!edit; drawHome(); $('dlist').scrollTop=0; }
 function drawDet(){
@@ -1068,7 +1068,7 @@ function itemAu(it,e){ if(it.a==='-') return null; const x=it.a?audById(it.a):nu
   document.addEventListener('visibilitychange',()=>{ if(document.hidden) save(); });
 })();
 
-/* lista de shows: deslizar para a esquerda mostra Apagar */
+/* lista de shows: deslizar para a esquerda mostra Renomear e Apagar */
 (function(){ const L=$('hlist'); let sx=0,sy=0,row=null,mv=false;
   const fecha=()=>L.querySelectorAll('.swrap.open').forEach(w=>w.classList.remove('open'));
   L.addEventListener('pointerdown',e=>{ if(window.SELM) return; const w=e.target.closest('.swrap'); if(!w){ return; } row=w; sx=e.clientX; sy=e.clientY; mv=false; });
@@ -1079,6 +1079,7 @@ function itemAu(it,e){ if(it.a==='-') return null; const x=it.a?audById(it.a):nu
     const rn=e.target.closest('.sren[data-ri]'); if(rn){ e.stopPropagation(); const en=LIB[+rn.dataset.ri]; if(!en) return; const v=await ask({title:'Renomear letra',value:en.n,ok:'Salvar'}); if(!v||v===en.n){ fecha(); return; } const j=libIdx(v.toLowerCase()); if(j>=0&&LIB[j]!==en){ toast('Já existe uma letra com esse nome.'); return; } const old=en.n; try{ window.palcoDelLib&&window.palcoDelLib(old); }catch(_){} for(const sh of [...SHOWS,...ST.banda.shows,...ST.solo.shows]) for(const it of sh.items) if(it.t==='s'&&String(it.n).toLowerCase()===old.toLowerCase()) it.n=v; en.n=v; en._saved=false; en._sig=null; try{ window.palcoSave&&await window.palcoSave(); }catch(_){} drawHome(); toast('Letra renomeada'); return; }
     const ra=e.target.closest('.sren[data-rid]'); if(ra){ e.stopPropagation(); const x=audById(ra.dataset.rid); if(!x) return; const v=await ask({title:'Renomear áudio',value:x.name,ok:'Salvar'}); if(!v||v===x.name){ fecha(); return; } x.name=v; x._saved=false; try{ window.palcoSave&&await window.palcoSave(); }catch(_){} try{ drawMedia(); }catch(_){} drawHome(); toast('Áudio renomeado'); return; }
     const dl=e.target.closest('.sdel[data-li]'); if(dl){ e.stopPropagation(); const en=LIB[+dl.dataset.li]; if(!en) return; let n=0; for(const s of [...SHOWS,...ST.banda.shows,...ST.solo.shows]) for(const it of s.items) if(it.t==='s'&&String(it.n).toLowerCase()===en.n.toLowerCase()) n++; const ok=await ask({title:'Apagar "'+en.n+'"?',msg:(n?'Ela está em músicas de shows, que ficam marcadas como faltando. ':'')+'Só a cópia dentro do app é apagada, o arquivo original continua onde está.',ok:'Apagar',danger:true}); if(ok){ LIB.splice(LIB.indexOf(en),1); try{ window.palcoDelLib&&window.palcoDelLib(en.n); window.palcoSave&&window.palcoSave(); }catch(_){} drawHome(); toast('Letra apagada'); } else fecha(); return; }
+    const rs=e.target.closest('.sren[data-sid]'); if(rs){ e.stopPropagation(); const sh=getShow(rs.dataset.sid); if(!sh) return; const v=await ask({title:'Nome do show',value:sh.name,ok:'Salvar'}); if(!v||v===sh.name){ fecha(); return; } sh.name=v; try{ window.palcoSave&&await window.palcoSave(); }catch(_){} drawHome(); toast('Show renomeado'); return; }
     const d=e.target.closest('.sdel[data-sid]'); if(d){ e.stopPropagation(); const sh=getShow(d.dataset.sid); if(!sh) return; const ok=await ask({title:'Apagar "'+sh.name+'"?',msg:'As músicas continuam na biblioteca.',ok:'Apagar',danger:true}); if(ok){ SHOWS.splice(SHOWS.indexOf(sh),1); drawHome(); toast('Show apagado'); } else fecha(); return; }
     if(L.querySelector('.swrap.open')&&e.target.closest('.swrap .hrow')){ e.stopPropagation(); e.preventDefault(); fecha(); } },true);
 })();
