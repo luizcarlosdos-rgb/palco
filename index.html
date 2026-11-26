@@ -739,6 +739,21 @@ st.addEventListener('touchstart',e=>{ tp0=e.touches.length===1?{x:e.touches[0].c
 st.addEventListener('touchend',e=>{ if(e.touches.length||e.changedTouches.length!==1||!tp0) return; const c=e.changedTouches[0], n=Date.now(); const toque=Math.hypot(c.clientX-tp0.x,c.clientY-tp0.y)<14&&n-tp0.t<350; tp0=null; if(!toque){ lastTap=0; return; } if(n-lastTap<350){ dobraToque(); lastTap=0; } else lastTap=n; });
 let tgL=0; function toggleLimpo(){ const n=Date.now(); if(n-tgL<500) return; tgL=n; document.body.classList.toggle('limpo'); updFl(); requestAnimationFrame(sizeSvg); }
 st.addEventListener('dblclick',()=>dobraToque());
+/* arrastar um dedo passa a página: para o lado ou para cima/baixo (só sem zoom) */
+(function(){ const css=document.createElement('style'); css.textContent='html,body,#stage{overscroll-behavior:none}'; document.head.appendChild(css);
+  let g=null;
+  st.addEventListener('touchstart',e=>{ if(e.touches.length!==1||zoom>1.05){ g=null; return; } const t=e.touches[0];
+    g={x:t.clientX,y:t.clientY,t:Date.now(),ax:null,
+      up:st.scrollTop>6, dn:st.scrollTop+st.clientHeight<st.scrollHeight-6, side:st.scrollWidth>st.clientWidth+6}; },{passive:true});
+  st.addEventListener('touchmove',e=>{ if(!g) return; if(e.touches.length!==1){ g=null; return; } const dx=e.touches[0].clientX-g.x, dy=e.touches[0].clientY-g.y;
+    if(!g.ax){ if(Math.max(Math.abs(dx),Math.abs(dy))<8) return; g.ax=Math.abs(dx)>Math.abs(dy)?'x':'y'; }
+    const rola=g.ax==='x'?g.side:(dy<0?g.dn:g.up); if(!rola&&e.cancelable) e.preventDefault(); },{passive:false});
+  st.addEventListener('touchend',e=>{ if(!g||e.touches.length) return; const a=g; g=null; const c=e.changedTouches[0], dx=c.clientX-a.x, dy=c.clientY-a.y, ax=Math.abs(dx), ay=Math.abs(dy);
+    if(Date.now()-a.t>900||zoom>1.05) return;
+    if(ax>=60&&ax>ay*1.4){ if(!a.side) nav(dx<0?1:-1); }
+    else if(ay>=60&&ay>ax*1.4){ if(!(dy<0?a.dn:a.up)) nav(dy<0?1:-1); } });
+  st.addEventListener('touchcancel',()=>{ g=null; });
+})();
 st.addEventListener('contextmenu',e=>e.preventDefault());
 st.addEventListener('selectstart',e=>e.preventDefault());
 document.addEventListener('touchmove',e=>{ if(e.touches.length>1&&!(e.target&&e.target.closest&&e.target.closest('#stage'))) e.preventDefault(); },{passive:false});
